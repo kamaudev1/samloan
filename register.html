@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | Sam Loan App</title>
 
-    <link rel="stylesheet" href="css/auth.css">
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Create Account | Sam Loans</title>
+
+<link rel="stylesheet" href="css/auth.css">
+
 </head>
+
 <body>
 
-<div class="auth-container">
+<div class="container">
 
-    <div class="auth-card">
+    <div class="card">
 
         <h1>Create Account</h1>
-        <p>Apply for loans quickly and securely.</p>
+
+        <p>Register to apply for a loan.</p>
 
         <form id="registerForm">
 
@@ -29,6 +35,7 @@
                 type="email"
                 id="email"
                 placeholder="Email Address"
+                autocomplete="email"
                 required
             >
 
@@ -36,28 +43,34 @@
                 type="password"
                 id="password"
                 placeholder="Password"
+                autocomplete="new-password"
                 required
             >
 
             <button type="submit">
+
                 Register
+
             </button>
 
         </form>
 
         <p id="message"></p>
 
-        <div class="login-link">
+        <a href="login.html">
+
             Already have an account?
-            <a href="login.html">Login</a>
-        </div>
+
+        </a>
 
     </div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
+
+<script src="js/config.js"></script>
+
 <script src="js/register.js"></script>
 
 </body>
