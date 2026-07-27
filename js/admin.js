@@ -84,7 +84,7 @@ document.getElementById("logout").onclick = async () => {
 };
 
 // ============================================
-// DASHBOARD - WITH ACCURATE COUNTS
+// DASHBOARD
 // ============================================
 async function loadDashboard() {
     showLoading();
@@ -97,7 +97,7 @@ async function loadDashboard() {
             getTableCount('payments')
         ]);
 
-        // Fetch recent applications with try-catch
+        // Fetch recent applications
         let recentApplications = [];
         try {
             const { data } = await client
@@ -111,7 +111,7 @@ async function loadDashboard() {
             recentApplications = [];
         }
 
-        // Fetch recent customers with try-catch
+        // Fetch recent customers
         let recentCustomers = [];
         try {
             const { data } = await client
@@ -125,7 +125,7 @@ async function loadDashboard() {
             recentCustomers = [];
         }
 
-        // Fetch loan data with try-catch
+        // Fetch loan data
         let totalLoanAmount = 0;
         try {
             const { data } = await client
@@ -210,7 +210,7 @@ async function loadDashboard() {
 }
 
 // ============================================
-// CUSTOMERS - Fetch ALL users regardless of role
+// CUSTOMERS - Fetch ALL users
 // ============================================
 async function loadCustomers() {
     showLoading();
@@ -376,7 +376,7 @@ window.showAddCustomer = () => {
 };
 
 // ============================================
-// HANDLE ADD CUSTOMER - FIXED 409 ERROR
+// HANDLE ADD CUSTOMER
 // ============================================
 window.handleAddCustomer = async (event) => {
     event.preventDefault();
