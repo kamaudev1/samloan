@@ -84,7 +84,7 @@ document.getElementById("logout").onclick = async () => {
 };
 
 // ============================================
-// DASHBOARD
+// DASHBOARD - FIXED
 // ============================================
 async function loadDashboard() {
     showLoading();
@@ -96,29 +96,46 @@ async function loadDashboard() {
             getTableCount('payments')
         ]);
 
-        const { data: recentApplications } = await client
-            .from('applications')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(5)
-            .catch(() => ({ data: [] }));
+        // Fetch recent applications with try-catch
+        let recentApplications = [];
+        try {
+            const { data } = await client
+                .from('applications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
+            recentApplications = data || [];
+        } catch (error) {
+            console.warn('Could not fetch recent applications:', error.message);
+            recentApplications = [];
+        }
 
-        const { data: recentCustomers } = await client
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(5)
-            .catch(() => ({ data: [] }));
+        // Fetch recent customers with try-catch
+        let recentCustomers = [];
+        try {
+            const { data } = await client
+                .from('profiles')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
+            recentCustomers = data || [];
+        } catch (error) {
+            console.warn('Could not fetch recent customers:', error.message);
+            recentCustomers = [];
+        }
 
+        // Fetch loan data with try-catch
         let totalLoanAmount = 0;
-        const { data: loanData } = await client
-            .from('loans')
-            .select('amount')
-            .eq('status', 'active')
-            .catch(() => ({ data: [] }));
-        
-        if (loanData) {
-            totalLoanAmount = loanData.reduce((sum, loan) => sum + (loan.amount || 0), 0);
+        try {
+            const { data } = await client
+                .from('loans')
+                .select('amount')
+                .eq('status', 'active');
+            if (data) {
+                totalLoanAmount = data.reduce((sum, loan) => sum + (loan.amount || 0), 0);
+            }
+        } catch (error) {
+            console.warn('Could not fetch loan data:', error.message);
         }
 
         document.getElementById("content").innerHTML = `
@@ -163,11 +180,11 @@ async function loadDashboard() {
             <div class="dashboard-grid-two">
                 <div class="recent-activity">
                     <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h3>
-                    ${renderRecentApplications(recentApplications || [])}
+                    ${renderRecentApplications(recentApplications)}
                 </div>
                 <div class="recent-activity">
                     <h3><i class="fa-solid fa-user-plus"></i> New Customers</h3>
-                    ${renderRecentCustomers(recentCustomers || [])}
+                    ${renderRecentCustomers(recentCustomers)}
                 </div>
             </div>
             <div class="quick-stats">
@@ -303,7 +320,7 @@ function refreshCustomers() {
 }
 
 // ============================================
-// ADD CUSTOMER - FIXED 409 ERROR
+// ADD CUSTOMER
 // ============================================
 window.showAddCustomer = () => {
     document.getElementById("content").innerHTML = `
@@ -356,7 +373,7 @@ window.showAddCustomer = () => {
 };
 
 // ============================================
-// HANDLE ADD CUSTOMER - FIXED 409 ERROR
+// HANDLE ADD CUSTOMER - FIXED
 // ============================================
 window.handleAddCustomer = async (event) => {
     event.preventDefault();
@@ -386,7 +403,7 @@ window.handleAddCustomer = async (event) => {
             .from('profiles')
             .select('email')
             .eq('email', email)
-            .single();
+            .maybeSingle();
 
         if (existingUser) {
             showToast('A user with this email already exists!', 'error');
@@ -417,46 +434,21 @@ window.handleAddCustomer = async (event) => {
             throw new Error('Failed to create user');
         }
 
-        // Check if profile already exists (race condition check)
-        const { data: existingProfile } = await client
+        // Create profile
+        const { error: profileError } = await client
             .from('profiles')
-            .select('id')
-            .eq('id', authData.user.id)
-            .single();
+            .insert({
+                id: authData.user.id,
+                full_name: fullName,
+                email: email,
+                phone: phone || null,
+                national_id: nationalId || null,
+                role: role
+            });
 
-        if (existingProfile) {
-            showToast('User already has a profile. Updating...', 'info');
-            // Update existing profile
-            const { error: updateError } = await client
-                .from('profiles')
-                .update({
-                    full_name: fullName,
-                    email: email,
-                    phone: phone || null,
-                    national_id: nationalId || null,
-                    role: role
-                })
-                .eq('id', authData.user.id);
-
-            if (updateError) throw updateError;
-        } else {
-            // Create profile
-            const { error: profileError } = await client
-                .from('profiles')
-                .insert({
-                    id: authData.user.id,
-                    full_name: fullName,
-                    email: email,
-                    phone: phone || null,
-                    national_id: nationalId || null,
-                    role: role
-                });
-
-            if (profileError) {
-                // If profile creation fails, the auth user still exists
-                console.error('Profile creation error:', profileError);
-                throw new Error('Failed to create user profile. Please try again.');
-            }
+        if (profileError) {
+            console.error('Profile creation error:', profileError);
+            throw new Error('Failed to create user profile. Please try again.');
         }
 
         showToast('User created successfully!', 'success');
@@ -626,7 +618,7 @@ window.handleEditCustomer = async (event, id) => {
             .select('id')
             .eq('email', email)
             .neq('id', id)
-            .single();
+            .maybeSingle();
 
         if (existingUser) {
             showToast('Email is already taken by another user', 'error');
