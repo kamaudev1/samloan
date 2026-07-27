@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Sam Loans</title>
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div class="logo-text">
+                <h2>Sam Loans</h2>
+                <span>Financial Solutions</span>
+            </div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="notification-btn">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge">3</span>
+        </div>
+        <div class="header-user">
+            <div class="user-avatar">
+                <span id="userInitial">S</span>
+            </div>
+            <div class="user-info">
+                <span id="headerUserName">User</span>
+                <span id="headerUserRole">Customer</span>
+            </div>
+        </div>
+        <button id="logout" class="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+</header>
+
+<div class="container">
+    <aside>
+        <div class="sidebar-top">
+            <div class="user-box">
+                <div class="avatar">
+                    <span id="sidebarInitial">S</span>
+                </div>
+                <h3 id="welcome">Welcome</h3>
+                <span id="role">Customer</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="apply-loan.html">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <span>Apply Loan</span>
+                            <span class="nav-badge new">New</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="loans.html">
+                            <i class="fa-solid fa-wallet"></i>
+                            <span>My Loans</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="payments.html">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Payments</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="profile.html">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li id="adminMenu" style="display:none;">
+                        <a href="../admin/admin.html">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Admin Panel</span>
+                            <span class="nav-badge admin">Admin</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="sidebar-bottom">
+            <div class="support-card">
+                <i class="fa-solid fa-headset"></i>
+                <div>
+                    <span>Need Help?</span>
+                    <a href="#">Contact Support</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <div class="main-header">
+            <div class="page-title">
+                <h1>My Profile</h1>
+                <p>Manage your personal information and documents</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn-secondary" onclick="refreshProfile()">
+                    <i class="fa-solid fa-rotate"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Profile Content -->
+        <div class="profile-container">
+            <!-- Profile Card -->
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar-container">
+                        <div class="profile-avatar" id="profileAvatar">
+                            <img id="profileImage" src="" alt="Profile Photo">
+                            <span id="avatarInitial">S</span>
+                        </div>
+                        <button class="avatar-upload-btn" onclick="document.getElementById('avatarUpload').click()">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                        <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="uploadAvatar(event)" />
+                    </div>
+                    <div class="profile-name">
+                        <h2 id="profileFullName">User Name</h2>
+                        <span class="profile-role" id="profileRole">Customer</span>
+                        <span class="profile-status" id="profileStatus">
+                            <i class="fa-solid fa-circle"></i> Active
+                        </span>
+                    </div>
+                </div>
+
+                <div class="profile-body">
+                    <!-- Personal Information -->
+                    <div class="profile-section">
+                        <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
+                        <form id="profileForm" onsubmit="updateProfile(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="fullName">
+                                        <i class="fa-solid fa-user"></i> Full Name *
+                                    </label>
+                                    <input type="text" id="fullName" required placeholder="Enter your full name" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">
+                                        <i class="fa-solid fa-envelope"></i> Email Address *
+                                    </label>
+                                    <input type="email" id="email" required placeholder="Enter your email" disabled />
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">
+                                        <i class="fa-solid fa-phone"></i> Phone Number *
+                                    </label>
+                                    <input type="tel" id="phone" required placeholder="Enter your phone number" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="nationalId">
+                                        <i class="fa-solid fa-id-card"></i> National ID *
+                                    </label>
+                                    <input type="text" id="nationalId" required placeholder="Enter your National ID" />
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="address">
+                                        <i class="fa-solid fa-location-dot"></i> Physical Address
+                                    </label>
+                                    <input type="text" id="address" placeholder="Enter your physical address" />
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary" id="updateProfileBtn">
+                                    <i class="fa-solid fa-save"></i> Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Documents Section -->
+                    <div class="profile-section">
+                        <h3><i class="fa-solid fa-file"></i> Documents</h3>
+                        <div class="documents-grid">
+                            <!-- Profile Photo -->
+                            <div class="document-card">
+                                <div class="document-icon">
+                                    <i class="fa-solid fa-user-circle"></i>
+                                </div>
+                                <div class="document-info">
+                                    <h4>Profile Photo</h4>
+                                    <p id="photoStatus">Not uploaded</p>
+                                </div>
+                                <div class="document-actions">
+                                    <button class="btn-upload" onclick="document.getElementById('avatarUpload').click()">
+                                        <i class="fa-solid fa-upload"></i> Upload
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- ID Document -->
+                            <div class="document-card">
+                                <div class="document-icon">
+                                    <i class="fa-solid fa-id-card"></i>
+                                </div>
+                                <div class="document-info">
+                                    <h4>National ID</h4>
+                                    <p id="idStatus">Not uploaded</p>
+                                </div>
+                                <div class="document-actions">
+                                    <button class="btn-upload" onclick="document.getElementById('idUpload').click()">
+                                        <i class="fa-solid fa-upload"></i> Upload
+                                    </button>
+                                    <input type="file" id="idUpload" accept="image/*,.pdf" style="display: none;" onchange="uploadID(event)" />
+                                </div>
+                            </div>
+
+                            <!-- Passport Photo -->
+                            <div class="document-card">
+                                <div class="document-icon">
+                                    <i class="fa-solid fa-passport"></i>
+                                </div>
+                                <div class="document-info">
+                                    <h4>Passport Photo</h4>
+                                    <p id="passportStatus">Not uploaded</p>
+                                </div>
+                                <div class="document-actions">
+                                    <button class="btn-upload" onclick="document.getElementById('passportUpload').click()">
+                                        <i class="fa-solid fa-upload"></i> Upload
+                                    </button>
+                                    <input type="file" id="passportUpload" accept="image/*" style="display: none;" onchange="uploadPassport(event)" />
+                                </div>
+                            </div>
+
+                            <!-- Signature -->
+                            <div class="document-card">
+                                <div class="document-icon">
+                                    <i class="fa-solid fa-signature"></i>
+                                </div>
+                                <div class="document-info">
+                                    <h4>Signature</h4>
+                                    <p id="signatureStatus">Not uploaded</p>
+                                </div>
+                                <div class="document-actions">
+                                    <button class="btn-upload" onclick="document.getElementById('signatureUpload').click()">
+                                        <i class="fa-solid fa-upload"></i> Upload
+                                    </button>
+                                    <input type="file" id="signatureUpload" accept="image/*" style="display: none;" onchange="uploadSignature(event)" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Section -->
+                    <div class="profile-section">
+                        <h3><i class="fa-solid fa-lock"></i> Security</h3>
+                        <div class="security-grid">
+                            <div class="security-card">
+                                <div class="security-icon">
+                                    <i class="fa-solid fa-key"></i>
+                                </div>
+                                <div class="security-info">
+                                    <h4>Change Password</h4>
+                                    <p>Update your account password</p>
+                                </div>
+                                <button class="btn-secondary" onclick="showChangePassword()">
+                                    <i class="fa-solid fa-pen"></i> Change
+                                </button>
+                            </div>
+                            <div class="security-card">
+                                <div class="security-icon">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </div>
+                                <div class="security-info">
+                                    <h4>Two-Factor Authentication</h4>
+                                    <p>Add an extra layer of security</p>
+                                </div>
+                                <button class="btn-secondary" onclick="showToast('2FA coming soon!', 'info')">
+                                    <i class="fa-solid fa-toggle-on"></i> Enable
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="passwordModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-key"></i> Change Password</h2>
+                    <button class="modal-close" onclick="closePasswordModal()">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm" onsubmit="handlePasswordChange(event)">
+                        <div class="form-group">
+                            <label for="currentPassword">
+                                <i class="fa-solid fa-lock"></i> Current Password *
+                            </label>
+                            <input type="password" id="currentPassword" required placeholder="Enter current password" />
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">
+                                <i class="fa-solid fa-lock"></i> New Password *
+                            </label>
+                            <input type="password" id="newPassword" required placeholder="Enter new password (min 6 chars)" minlength="6" />
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">
+                                <i class="fa-solid fa-lock"></i> Confirm New Password *
+                            </label>
+                            <input type="password" id="confirmPassword" required placeholder="Confirm new password" />
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="closePasswordModal()">Cancel</button>
+                            <button type="submit" class="btn-primary" id="changePasswordBtn">
+                                <i class="fa-solid fa-key"></i> Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Preview Modal -->
+        <div id="imagePreviewModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-image"></i> Image Preview</h2>
+                    <button class="modal-close" onclick="closeImagePreview()">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" style="text-align: center;">
+                    <img id="previewImage" src="" alt="Preview" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />
+                    <div style="margin-top: 16px;">
+                        <button class="btn-secondary" onclick="closeImagePreview()">Close</button>
+                        <button class="btn-primary" id="previewDownloadBtn" onclick="downloadPreview()">
+                            <i class="fa-solid fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/authGuard.js"></script>
+<script src="../js/profile.js"></script>
+<script src="../js/logout.js"></script>
+</body>
+</html>
