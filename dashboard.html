@@ -33,22 +33,73 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
 
 <aside>
 
-<ul>
+    <div class="user-box">
 
-<li><a href="dashboard.html">Dashboard</a></li>
+        <div class="avatar">
 
-<li><a href="apply-loan.html">Apply Loan</a></li>
+            <i class="fa-solid fa-user"></i>
 
-<li><a href="loans.html">My Loans</a></li>
+        </div>
 
-<li><a href="payments.html">Payments</a></li>
+        <h3 id="welcome"></h3>
 
-<li><a href="profile.html">Profile</a></li>
+        <span id="role"></span>
 
-</ul>
+    </div>
+
+    <ul>
+
+        <li>
+            <a href="dashboard.html">
+                <i class="fa-solid fa-house"></i>
+                Dashboard
+            </a>
+        </li>
+
+        <li>
+            <a href="apply-loan.html">
+                <i class="fa-solid fa-file-signature"></i>
+                Apply Loan
+            </a>
+        </li>
+
+        <li>
+            <a href="loans.html">
+                <i class="fa-solid fa-wallet"></i>
+                My Loans
+            </a>
+        </li>
+
+        <li>
+            <a href="payments.html">
+                <i class="fa-solid fa-money-bill"></i>
+                Payments
+            </a>
+        </li>
+
+        <li>
+            <a href="profile.html">
+                <i class="fa-solid fa-user"></i>
+                Profile
+            </a>
+        </li>
+
+        <!-- Hidden by default -->
+        <li id="adminMenu" style="display:none;">
+
+            <a href="../admin/dashboard.html">
+
+                <i class="fa-solid fa-user-shield"></i>
+
+                Admin Panel
+
+            </a>
+
+        </li>
+
+    </ul>
 
 </aside>
-
 <main>
 
 <h1 id="welcome"></h1>
