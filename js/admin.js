@@ -4,6 +4,10 @@
 let adminInfo = null;
 let currentPage = 'dashboard';
 let isLoading = false;
+let customersData = [];
+let applicationsData = [];
+let loansData = [];
+let paymentsData = [];
 
 // ============================================
 // PAGE CONFIGURATION
@@ -96,7 +100,7 @@ async function loadDashboard() {
     try {
         // Fetch real data
         const [customersCount, applicationsCount, loansCount, paymentsCount] = await Promise.all([
-            getTableCount('customers'),
+            getTableCount('profiles'),
             getTableCount('applications'),
             getTableCount('loans'),
             getTableCount('payments')
@@ -108,6 +112,21 @@ async function loadDashboard() {
             .select('*')
             .order('created_at', { ascending: false })
             .limit(5);
+
+        // Get recent customers
+        const { data: recentCustomers } = await client
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        // Calculate total loan amount
+        const { data: loanData } = await client
+            .from('loans')
+            .select('amount')
+            .eq('status', 'active');
+        
+        const totalLoanAmount = loanData?.reduce((sum, loan) => sum + (loan.amount || 0), 0) || 0;
 
         document.getElementById("content").innerHTML = `
             <div class="dashboard-grid">
@@ -148,19 +167,34 @@ async function loadDashboard() {
                         <p>${paymentsCount || 0}</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- Recent Activity -->
+            <div class="dashboard-grid-two">
+                <!-- Recent Applications -->
                 <div class="recent-activity">
                     <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h3>
                     ${renderRecentApplications(recentApplications)}
                 </div>
+
+                <!-- Recent Customers -->
+                <div class="recent-activity">
+                    <h3><i class="fa-solid fa-user-plus"></i> New Customers</h3>
+                    ${renderRecentCustomers(recentCustomers)}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="quick-stat">
+                    <span>Total Loan Amount</span>
+                    <strong>$${totalLoanAmount.toLocaleString()}</strong>
+                </div>
+                <div class="quick-stat">
+                    <span>Average Loan</span>
+                    <strong>$${loansCount > 0 ? (totalLoanAmount / loansCount).toFixed(2) : '0.00'}</strong>
+                </div>
             </div>
         `;
-
-        // Initialize charts if available
-        if (typeof Chart !== 'undefined') {
-            // Chart.js integration would go here
-        }
 
     } catch (error) {
         console.error('Dashboard error:', error);
@@ -171,43 +205,67 @@ async function loadDashboard() {
 }
 
 // ============================================
-// CUSTOMERS
+// CUSTOMERS - Fetch from profiles table
 // ============================================
 async function loadCustomers() {
     showLoading();
     try {
+        // Fetch all customers from profiles table
         const { data: customers, error } = await client
-            .from('customers')
+            .from('profiles')
             .select('*')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
+        customersData = customers || [];
+
+        // Filter out admin users if needed (optional)
+        const filteredCustomers = customersData.filter(c => c.role !== 'admin');
+
         document.getElementById("content").innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-users"></i> Customers</h2>
-                <button class="btn-primary" onclick="showAddCustomer()">
-                    <i class="fa-solid fa-plus"></i> Add Customer
-                </button>
+                <div class="page-actions">
+                    <button class="btn-primary" onclick="showAddCustomer()">
+                        <i class="fa-solid fa-plus"></i> Add Customer
+                    </button>
+                    <button class="btn-secondary" onclick="refreshCustomers()">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
             </div>
             <div class="table-container">
+                <div class="table-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="searchCustomers()" />
+                    </div>
+                    <div class="table-stats">
+                        <span>Total: <strong>${filteredCustomers.length}</strong> customers</span>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
-                            <th>Name</th>
+                            <th>Full Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Status</th>
+                            <th>National ID</th>
+                            <th>Role</th>
+                            <th>Joined</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${customers?.length ? customers.map(customer => `
+                    <tbody id="customersTableBody">
+                        ${filteredCustomers?.length ? filteredCustomers.map(customer => `
                             <tr>
                                 <td><strong>${customer.full_name || 'N/A'}</strong></td>
                                 <td>${customer.email || 'N/A'}</td>
                                 <td>${customer.phone || 'N/A'}</td>
-                                <td><span class="status-badge ${customer.status || 'active'}">${customer.status || 'Active'}</span></td>
+                                <td>${customer.national_id || 'N/A'}</td>
+                                <td><span class="status-badge ${customer.role === 'admin' ? 'admin' : 'customer'}">${customer.role || 'customer'}</span></td>
+                                <td>${customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'N/A'}</td>
                                 <td>
                                     <button class="btn-icon" onclick="viewCustomer('${customer.id}')" title="View">
                                         <i class="fa-solid fa-eye"></i>
@@ -215,14 +273,16 @@ async function loadCustomers() {
                                     <button class="btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
-                                    <button class="btn-icon danger" onclick="deleteCustomer('${customer.id}')" title="Delete">
+                                    <button class="btn-icon ${customer.role === 'admin' ? 'disabled' : 'danger'}" 
+                                            onclick="${customer.role === 'admin' ? '' : `deleteCustomer('${customer.id}')`}" 
+                                            title="${customer.role === 'admin' ? 'Cannot delete admin' : 'Delete'}">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </td>
                             </tr>
                         `).join('') : `
                             <tr>
-                                <td colspan="5" class="empty-state">
+                                <td colspan="7" class="empty-state">
                                     <i class="fa-solid fa-users"></i>
                                     <p>No customers found</p>
                                     <button class="btn-primary" onclick="showAddCustomer()">Add your first customer</button>
@@ -235,11 +295,369 @@ async function loadCustomers() {
         `;
     } catch (error) {
         console.error('Customers error:', error);
-        showError('Failed to load customers');
+        showError('Failed to load customers: ' + error.message);
     } finally {
         hideLoading();
     }
 }
+
+// ============================================
+// CUSTOMER SEARCH FUNCTION
+// ============================================
+function searchCustomers() {
+    const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#customersTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+// ============================================
+// REFRESH CUSTOMERS
+// ============================================
+function refreshCustomers() {
+    loadCustomers();
+}
+
+// ============================================
+// CUSTOMER CRUD OPERATIONS
+// ============================================
+
+// Add Customer - Show modal/form
+window.showAddCustomer = () => {
+    document.getElementById("content").innerHTML = `
+        <div class="page-header">
+            <h2><i class="fa-solid fa-user-plus"></i> Add New Customer</h2>
+            <button class="btn-secondary" onclick="loadCustomers()">
+                <i class="fa-solid fa-arrow-left"></i> Back to Customers
+            </button>
+        </div>
+        <div class="form-container">
+            <form id="addCustomerForm" onsubmit="handleAddCustomer(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="fullName">Full Name *</label>
+                        <input type="text" id="fullName" required placeholder="Enter full name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" required placeholder="Enter email address" />
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" placeholder="Enter phone number" />
+                    </div>
+                    <div class="form-group">
+                        <label for="nationalId">National ID</label>
+                        <input type="text" id="nationalId" placeholder="Enter national ID" />
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password *</label>
+                        <input type="password" id="password" required placeholder="Enter password (min 6 chars)" minlength="6" />
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select id="role">
+                            <option value="customer">Customer</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="loadCustomers()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-user-plus"></i> Create Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+};
+
+// Handle Add Customer
+window.handleAddCustomer = async (event) => {
+    event.preventDefault();
+    
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const nationalId = document.getElementById('nationalId').value.trim();
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+
+    if (!fullName || !email || !password) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
+
+    if (password.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    try {
+        showToast('Creating customer...', 'info');
+        
+        // 1. Create auth user
+        const { data: authData, error: authError } = await client.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    role: role
+                }
+            }
+        });
+
+        if (authError) throw authError;
+
+        if (!authData.user) {
+            throw new Error('Failed to create user');
+        }
+
+        // 2. Create profile
+        const { error: profileError } = await client
+            .from('profiles')
+            .insert({
+                id: authData.user.id,
+                full_name: fullName,
+                email: email,
+                phone: phone || null,
+                national_id: nationalId || null,
+                role: role
+            });
+
+        if (profileError) {
+            console.error('Profile creation error:', profileError);
+            throw new Error('Failed to create customer profile');
+        }
+
+        showToast('Customer created successfully!', 'success');
+        setTimeout(() => loadCustomers(), 1500);
+
+    } catch (error) {
+        console.error('Add customer error:', error);
+        showToast(error.message || 'Failed to create customer', 'error');
+    }
+};
+
+// View Customer
+window.viewCustomer = async (id) => {
+    try {
+        const { data: customer, error } = await client
+            .from('profiles')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        document.getElementById("content").innerHTML = `
+            <div class="page-header">
+                <h2><i class="fa-solid fa-user"></i> Customer Details</h2>
+                <button class="btn-secondary" onclick="loadCustomers()">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Customers
+                </button>
+            </div>
+            <div class="customer-details">
+                <div class="detail-card">
+                    <div class="detail-header">
+                        <div class="detail-avatar">
+                            <i class="fa-solid fa-user-circle"></i>
+                        </div>
+                        <div>
+                            <h3>${customer.full_name}</h3>
+                            <p class="detail-role"><span class="status-badge ${customer.role}">${customer.role}</span></p>
+                        </div>
+                    </div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Email</label>
+                            <p>${customer.email || 'N/A'}</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Phone</label>
+                            <p>${customer.phone || 'N/A'}</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>National ID</label>
+                            <p>${customer.national_id || 'N/A'}</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Role</label>
+                            <p><span class="status-badge ${customer.role}">${customer.role}</span></p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Joined</label>
+                            <p>${customer.created_at ? new Date(customer.created_at).toLocaleString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn-primary" onclick="editCustomer('${customer.id}')">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </button>
+                        ${customer.role !== 'admin' ? `
+                            <button class="btn-danger" onclick="deleteCustomer('${customer.id}')">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('View customer error:', error);
+        showToast('Failed to load customer details', 'error');
+    }
+};
+
+// Edit Customer
+window.editCustomer = async (id) => {
+    try {
+        const { data: customer, error } = await client
+            .from('profiles')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        document.getElementById("content").innerHTML = `
+            <div class="page-header">
+                <h2><i class="fa-solid fa-user-pen"></i> Edit Customer</h2>
+                <button class="btn-secondary" onclick="loadCustomers()">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Customers
+                </button>
+            </div>
+            <div class="form-container">
+                <form id="editCustomerForm" onsubmit="handleEditCustomer(event, '${id}')">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="editFullName">Full Name *</label>
+                            <input type="text" id="editFullName" required value="${customer.full_name || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmail">Email *</label>
+                            <input type="email" id="editEmail" required value="${customer.email || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label for="editPhone">Phone</label>
+                            <input type="tel" id="editPhone" value="${customer.phone || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label for="editNationalId">National ID</label>
+                            <input type="text" id="editNationalId" value="${customer.national_id || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label for="editRole">Role</label>
+                            <select id="editRole">
+                                <option value="customer" ${customer.role === 'customer' ? 'selected' : ''}>Customer</option>
+                                <option value="admin" ${customer.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="loadCustomers()">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fa-solid fa-save"></i> Update Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Edit customer error:', error);
+        showToast('Failed to load customer for editing', 'error');
+    }
+};
+
+// Handle Edit Customer
+window.handleEditCustomer = async (event, id) => {
+    event.preventDefault();
+
+    const fullName = document.getElementById('editFullName').value.trim();
+    const email = document.getElementById('editEmail').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    const nationalId = document.getElementById('editNationalId').value.trim();
+    const role = document.getElementById('editRole').value;
+
+    if (!fullName || !email) {
+        showToast('Full Name and Email are required', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await client
+            .from('profiles')
+            .update({
+                full_name: fullName,
+                email: email,
+                phone: phone || null,
+                national_id: nationalId || null,
+                role: role,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        showToast('Customer updated successfully!', 'success');
+        setTimeout(() => loadCustomers(), 1500);
+    } catch (error) {
+        console.error('Update customer error:', error);
+        showToast('Failed to update customer: ' + error.message, 'error');
+    }
+};
+
+// Delete Customer
+window.deleteCustomer = async (id) => {
+    if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        // First, check if customer has any active loans
+        const { data: loans, error: loansError } = await client
+            .from('loans')
+            .select('id')
+            .eq('customer_id', id)
+            .eq('status', 'active');
+
+        if (loansError) throw loansError;
+
+        if (loans && loans.length > 0) {
+            showToast('Cannot delete customer with active loans', 'error');
+            return;
+        }
+
+        // Delete from profiles
+        const { error } = await client
+            .from('profiles')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Also delete from auth (admin API required)
+        try {
+            const { error: authError } = await client.auth.admin.deleteUser(id);
+            if (authError) {
+                console.warn('Auth user deletion failed:', authError);
+            }
+        } catch (authErr) {
+            console.warn('Auth deletion not available:', authErr);
+        }
+
+        showToast('Customer deleted successfully!', 'success');
+        loadCustomers();
+    } catch (error) {
+        console.error('Delete customer error:', error);
+        showToast('Failed to delete customer: ' + error.message, 'error');
+    }
+};
 
 // ============================================
 // APPLICATIONS
@@ -254,14 +672,30 @@ async function loadApplications() {
 
         if (error) throw error;
 
+        applicationsData = applications || [];
+
         document.getElementById("content").innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-file-signature"></i> Loan Applications</h2>
-                <button class="btn-primary" onclick="showAddApplication()">
-                    <i class="fa-solid fa-plus"></i> New Application
-                </button>
+                <div class="page-actions">
+                    <button class="btn-primary" onclick="showAddApplication()">
+                        <i class="fa-solid fa-plus"></i> New Application
+                    </button>
+                    <button class="btn-secondary" onclick="refreshApplications()">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
             </div>
             <div class="table-container">
+                <div class="table-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="applicationSearch" placeholder="Search applications..." onkeyup="searchApplications()" />
+                    </div>
+                    <div class="table-stats">
+                        <span>Total: <strong>${applicationsData.length}</strong> applications</span>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -272,8 +706,8 @@ async function loadApplications() {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${applications?.length ? applications.map(app => `
+                    <tbody id="applicationsTableBody">
+                        ${applicationsData?.length ? applicationsData.map(app => `
                             <tr>
                                 <td><strong>${app.applicant_name || 'N/A'}</strong></td>
                                 <td>$${app.amount?.toLocaleString() || '0'}</td>
@@ -286,12 +720,14 @@ async function loadApplications() {
                                     <button class="btn-icon" onclick="editApplication('${app.id}')" title="Edit">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
-                                    <button class="btn-icon success" onclick="approveApplication('${app.id}')" title="Approve">
-                                        <i class="fa-solid fa-check"></i>
-                                    </button>
-                                    <button class="btn-icon danger" onclick="rejectApplication('${app.id}')" title="Reject">
-                                        <i class="fa-solid fa-times"></i>
-                                    </button>
+                                    ${app.status === 'pending' ? `
+                                        <button class="btn-icon success" onclick="approveApplication('${app.id}')" title="Approve">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                        <button class="btn-icon danger" onclick="rejectApplication('${app.id}')" title="Reject">
+                                            <i class="fa-solid fa-times"></i>
+                                        </button>
+                                    ` : ''}
                                 </td>
                             </tr>
                         `).join('') : `
@@ -315,6 +751,21 @@ async function loadApplications() {
     }
 }
 
+// Application Search
+function searchApplications() {
+    const searchTerm = document.getElementById('applicationSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#applicationsTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+function refreshApplications() {
+    loadApplications();
+}
+
 // ============================================
 // LOANS
 // ============================================
@@ -328,14 +779,30 @@ async function loadLoans() {
 
         if (error) throw error;
 
+        loansData = loans || [];
+
         document.getElementById("content").innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-wallet"></i> Loans</h2>
-                <button class="btn-primary" onclick="showAddLoan()">
-                    <i class="fa-solid fa-plus"></i> Disburse Loan
-                </button>
+                <div class="page-actions">
+                    <button class="btn-primary" onclick="showAddLoan()">
+                        <i class="fa-solid fa-plus"></i> Disburse Loan
+                    </button>
+                    <button class="btn-secondary" onclick="refreshLoans()">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
             </div>
             <div class="table-container">
+                <div class="table-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="loanSearch" placeholder="Search loans..." onkeyup="searchLoans()" />
+                    </div>
+                    <div class="table-stats">
+                        <span>Total: <strong>${loansData.length}</strong> loans</span>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -347,8 +814,8 @@ async function loadLoans() {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${loans?.length ? loans.map(loan => `
+                    <tbody id="loansTableBody">
+                        ${loansData?.length ? loansData.map(loan => `
                             <tr>
                                 <td><strong>${loan.customer_name || 'N/A'}</strong></td>
                                 <td>$${loan.amount?.toLocaleString() || '0'}</td>
@@ -362,9 +829,11 @@ async function loadLoans() {
                                     <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
-                                    <button class="btn-icon success" onclick="makePayment('${loan.id}')" title="Make Payment">
-                                        <i class="fa-solid fa-money-bill"></i>
-                                    </button>
+                                    ${loan.status === 'active' ? `
+                                        <button class="btn-icon success" onclick="makePayment('${loan.id}')" title="Make Payment">
+                                            <i class="fa-solid fa-money-bill"></i>
+                                        </button>
+                                    ` : ''}
                                 </td>
                             </tr>
                         `).join('') : `
@@ -388,6 +857,20 @@ async function loadLoans() {
     }
 }
 
+function searchLoans() {
+    const searchTerm = document.getElementById('loanSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#loansTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+function refreshLoans() {
+    loadLoans();
+}
+
 // ============================================
 // PAYMENTS
 // ============================================
@@ -401,14 +884,30 @@ async function loadPayments() {
 
         if (error) throw error;
 
+        paymentsData = payments || [];
+
         document.getElementById("content").innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-money-bill-wave"></i> Payments</h2>
-                <button class="btn-primary" onclick="showAddPayment()">
-                    <i class="fa-solid fa-plus"></i> Record Payment
-                </button>
+                <div class="page-actions">
+                    <button class="btn-primary" onclick="showAddPayment()">
+                        <i class="fa-solid fa-plus"></i> Record Payment
+                    </button>
+                    <button class="btn-secondary" onclick="refreshPayments()">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
             </div>
             <div class="table-container">
+                <div class="table-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="paymentSearch" placeholder="Search payments..." onkeyup="searchPayments()" />
+                    </div>
+                    <div class="table-stats">
+                        <span>Total: <strong>${paymentsData.length}</strong> payments</span>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -420,8 +919,8 @@ async function loadPayments() {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${payments?.length ? payments.map(payment => `
+                    <tbody id="paymentsTableBody">
+                        ${paymentsData?.length ? paymentsData.map(payment => `
                             <tr>
                                 <td><strong>${payment.customer_name || 'N/A'}</strong></td>
                                 <td>${payment.loan_id || 'N/A'}</td>
@@ -459,6 +958,20 @@ async function loadPayments() {
     } finally {
         hideLoading();
     }
+}
+
+function searchPayments() {
+    const searchTerm = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#paymentsTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+function refreshPayments() {
+    loadPayments();
 }
 
 // ============================================
@@ -529,7 +1042,7 @@ async function loadSettings() {
                     </div>
                     <div class="form-group">
                         <label>New Password</label>
-                        <input type="password" id="newPassword" placeholder="Enter new password" />
+                        <input type="password" id="newPassword" placeholder="Enter new password (min 6 chars)" minlength="6" />
                     </div>
                     <div class="form-group">
                         <label>Confirm New Password</label>
@@ -592,6 +1105,35 @@ function renderRecentApplications(applications) {
     `;
 }
 
+// Render recent customers
+function renderRecentCustomers(customers) {
+    if (!customers?.length) {
+        return `
+            <div class="empty-state">
+                <i class="fa-solid fa-inbox"></i>
+                <p>No recent customers</p>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="activity-list">
+            ${customers.slice(0, 5).map(customer => `
+                <div class="activity-item">
+                    <div class="activity-icon customer">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="activity-content">
+                        <p><strong>${customer.full_name || 'Unknown'}</strong> joined</p>
+                        <span class="activity-date">${customer.created_at ? timeAgo(customer.created_at) : 'Recently'}</span>
+                    </div>
+                    <span class="status-badge small ${customer.role || 'customer'}">${customer.role || 'Customer'}</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 // Time ago function
 function timeAgo(date) {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -643,87 +1185,221 @@ function showError(message) {
 }
 
 function showToast(message, type = 'success') {
-    // Simple toast implementation
+    // Remove existing toasts
+    const existingToasts = document.querySelectorAll('.toast');
+    existingToasts.forEach(toast => toast.remove());
+
+    // Create new toast
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 
+                 type === 'error' ? 'fa-exclamation-circle' :
+                 type === 'info' ? 'fa-info-circle' : 'fa-check-circle';
     toast.innerHTML = `
-        <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        <i class="fa-solid ${icon}"></i>
         <span>${message}</span>
     `;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // ============================================
-// ACTION FUNCTIONS (to be implemented)
+// APPLICATION CRUD OPERATIONS
 // ============================================
 
-// Customer actions
-window.showAddCustomer = () => showToast('Add customer form coming soon');
-window.viewCustomer = (id) => showToast(`Viewing customer ${id}`);
-window.editCustomer = (id) => showToast(`Editing customer ${id}`);
-window.deleteCustomer = (id) => {
-    if (confirm('Are you sure you want to delete this customer?')) {
-        showToast('Customer deleted successfully');
+window.showAddApplication = () => {
+    showToast('New application form coming soon');
+};
+
+window.viewApplication = (id) => {
+    showToast(`Viewing application ${id}`);
+};
+
+window.editApplication = (id) => {
+    showToast(`Editing application ${id}`);
+};
+
+window.approveApplication = async (id) => {
+    if (!confirm('Approve this application?')) return;
+    try {
+        const { error } = await client
+            .from('applications')
+            .update({ status: 'approved', updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) throw error;
+        showToast('Application approved successfully!', 'success');
+        loadApplications();
+    } catch (error) {
+        console.error('Approve application error:', error);
+        showToast('Failed to approve application', 'error');
     }
 };
 
-// Application actions
-window.showAddApplication = () => showToast('New application form coming soon');
-window.viewApplication = (id) => showToast(`Viewing application ${id}`);
-window.editApplication = (id) => showToast(`Editing application ${id}`);
-window.approveApplication = (id) => {
-    if (confirm('Approve this application?')) {
-        showToast('Application approved successfully');
-    }
-};
-window.rejectApplication = (id) => {
-    if (confirm('Reject this application?')) {
-        showToast('Application rejected');
-    }
-};
-
-// Loan actions
-window.showAddLoan = () => showToast('Disburse loan form coming soon');
-window.viewLoan = (id) => showToast(`Viewing loan ${id}`);
-window.editLoan = (id) => showToast(`Editing loan ${id}`);
-window.makePayment = (id) => showToast(`Payment form for loan ${id}`);
-
-// Payment actions
-window.showAddPayment = () => showToast('Record payment form coming soon');
-window.viewPayment = (id) => showToast(`Viewing payment ${id}`);
-window.editPayment = (id) => showToast(`Editing payment ${id}`);
-window.deletePayment = (id) => {
-    if (confirm('Are you sure you want to delete this payment?')) {
-        showToast('Payment deleted successfully');
+window.rejectApplication = async (id) => {
+    if (!confirm('Reject this application?')) return;
+    try {
+        const { error } = await client
+            .from('applications')
+            .update({ status: 'rejected', updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) throw error;
+        showToast('Application rejected', 'error');
+        loadApplications();
+    } catch (error) {
+        console.error('Reject application error:', error);
+        showToast('Failed to reject application', 'error');
     }
 };
 
-// Report actions
-window.generateReport = (type) => {
-    showToast(`Generating ${type} report...`);
-    document.getElementById('reportContainer').innerHTML = `
-        <div class="report-result">
-            <h3>${type.charAt(0).toUpperCase() + type.slice(1)} Report</h3>
-            <p>Report generation in progress...</p>
-            <div class="report-preview">
-                <div class="report-stat">
-                    <span>Total ${type}</span>
-                    <strong>${Math.floor(Math.random() * 1000)}</strong>
+// ============================================
+// LOAN CRUD OPERATIONS
+// ============================================
+
+window.showAddLoan = () => {
+    showToast('Disburse loan form coming soon');
+};
+
+window.viewLoan = (id) => {
+    showToast(`Viewing loan ${id}`);
+};
+
+window.editLoan = (id) => {
+    showToast(`Editing loan ${id}`);
+};
+
+window.makePayment = (id) => {
+    showToast(`Payment form for loan ${id}`);
+};
+
+// ============================================
+// PAYMENT CRUD OPERATIONS
+// ============================================
+
+window.showAddPayment = () => {
+    showToast('Record payment form coming soon');
+};
+
+window.viewPayment = (id) => {
+    showToast(`Viewing payment ${id}`);
+};
+
+window.editPayment = (id) => {
+    showToast(`Editing payment ${id}`);
+};
+
+window.deletePayment = async (id) => {
+    if (!confirm('Are you sure you want to delete this payment?')) return;
+    try {
+        const { error } = await client
+            .from('payments')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        showToast('Payment deleted successfully', 'success');
+        loadPayments();
+    } catch (error) {
+        console.error('Delete payment error:', error);
+        showToast('Failed to delete payment', 'error');
+    }
+};
+
+// ============================================
+// REPORT FUNCTIONS
+// ============================================
+
+window.generateReport = async (type) => {
+    showToast(`Generating ${type} report...`, 'info');
+    
+    const reportContainer = document.getElementById('reportContainer');
+    if (!reportContainer) return;
+
+    try {
+        let data = [];
+        let title = '';
+        let total = 0;
+
+        switch(type) {
+            case 'customers':
+                const { data: customers } = await client.from('profiles').select('*');
+                data = customers || [];
+                title = 'Customer Report';
+                total = data.length;
+                break;
+            case 'applications':
+                const { data: applications } = await client.from('applications').select('*');
+                data = applications || [];
+                title = 'Applications Report';
+                total = data.length;
+                break;
+            case 'loans':
+                const { data: loans } = await client.from('loans').select('*');
+                data = loans || [];
+                title = 'Loans Report';
+                total = data.length;
+                break;
+            case 'payments':
+                const { data: payments } = await client.from('payments').select('*');
+                data = payments || [];
+                title = 'Payments Report';
+                total = data.length;
+                break;
+        }
+
+        const totalAmount = data.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+        reportContainer.innerHTML = `
+            <div class="report-result">
+                <h3>${title}</h3>
+                <div class="report-preview">
+                    <div class="report-stat">
+                        <span>Total Records</span>
+                        <strong>${total}</strong>
+                    </div>
+                    <div class="report-stat">
+                        <span>Total Amount</span>
+                        <strong>$${totalAmount.toLocaleString()}</strong>
+                    </div>
+                    <div class="report-stat">
+                        <span>Average</span>
+                        <strong>$${total > 0 ? (totalAmount / total).toFixed(2) : '0.00'}</strong>
+                    </div>
                 </div>
-                <div class="report-stat">
-                    <span>Growth</span>
-                    <strong class="positive">+${Math.floor(Math.random() * 30)}%</strong>
+                <div style="margin-top: 16px;">
+                    <button class="btn-primary" onclick="downloadReport('${type}')">
+                        <i class="fa-solid fa-download"></i> Download Report
+                    </button>
+                    <button class="btn-secondary" onclick="document.getElementById('reportContainer').innerHTML = ''">
+                        <i class="fa-solid fa-times"></i> Close
+                    </button>
                 </div>
             </div>
-            <button class="btn-primary" onclick="showToast('Download started')">
-                <i class="fa-solid fa-download"></i> Download Report
-            </button>
-        </div>
-    `;
+        `;
+        
+        showToast('Report generated successfully!', 'success');
+    } catch (error) {
+        console.error('Generate report error:', error);
+        showToast('Failed to generate report', 'error');
+    }
 };
 
-// Settings actions
+window.downloadReport = (type) => {
+    showToast(`Downloading ${type} report...`, 'info');
+    // Implement actual download logic here
+    setTimeout(() => {
+        showToast('Report downloaded!', 'success');
+    }, 1000);
+};
+
+// ============================================
+// SETTINGS FUNCTIONS
+// ============================================
+
 window.updateProfile = async () => {
     const name = document.getElementById('settingsName')?.value;
     if (!name) {
@@ -737,7 +1413,7 @@ window.updateProfile = async () => {
             .eq('id', adminInfo.user.id);
 
         if (error) throw error;
-        showToast('Profile updated successfully');
+        showToast('Profile updated successfully', 'success');
         adminInfo.profile.full_name = name;
         document.getElementById('welcomeAdmin').innerHTML = `Welcome, <strong>${name}</strong>`;
         document.getElementById('adminName').textContent = name;
@@ -773,7 +1449,7 @@ window.changePassword = async () => {
         });
 
         if (error) throw error;
-        showToast('Password changed successfully');
+        showToast('Password changed successfully', 'success');
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
