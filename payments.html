@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments - Sam Loans</title>
+    <link rel="stylesheet" href="../css/payments.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div class="logo-text">
+                <h2>Sam Loans</h2>
+                <span>Financial Solutions</span>
+            </div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="notification-btn">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge">3</span>
+        </div>
+        <div class="header-user">
+            <div class="user-avatar">
+                <span id="userInitial">S</span>
+            </div>
+            <div class="user-info">
+                <span id="headerUserName">User</span>
+                <span id="headerUserRole">Customer</span>
+            </div>
+        </div>
+        <button id="logout" class="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+</header>
+
+<div class="container">
+    <aside>
+        <div class="sidebar-top">
+            <div class="user-box">
+                <div class="avatar">
+                    <span id="sidebarInitial">S</span>
+                </div>
+                <h3 id="welcome">Welcome</h3>
+                <span id="role">Customer</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="apply-loan.html">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <span>Apply Loan</span>
+                            <span class="nav-badge new">New</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="loans.html">
+                            <i class="fa-solid fa-wallet"></i>
+                            <span>My Loans</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="payments.html">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Payments</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="profile.html">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li id="adminMenu" style="display:none;">
+                        <a href="../admin/admin.html">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Admin Panel</span>
+                            <span class="nav-badge admin">Admin</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="sidebar-bottom">
+            <div class="support-card">
+                <i class="fa-solid fa-headset"></i>
+                <div>
+                    <span>Need Help?</span>
+                    <a href="#">Contact Support</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <div class="main-header">
+            <div class="page-title">
+                <h1>Payments</h1>
+                <p>View and manage all your payments</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn-primary" onclick="showMakePayment()">
+                    <i class="fa-solid fa-plus"></i> Make Payment
+                </button>
+                <button class="btn-secondary" onclick="refreshPayments()">
+                    <i class="fa-solid fa-rotate"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Payment Summary Stats -->
+        <div class="payment-stats" id="paymentStats">
+            <div class="stat-card stat-card-total">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Total Payments</span>
+                    <span class="stat-value" id="totalPayments">0</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-amount">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Total Amount Paid</span>
+                    <span class="stat-value" id="totalAmount">KES 0</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-completed">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Completed</span>
+                    <span class="stat-value" id="completedPayments">0</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-pending">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-label">Pending</span>
+                    <span class="stat-value" id="pendingPayments">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>
+                    <i class="fa-solid fa-filter"></i> Status
+                </label>
+                <select id="statusFilter" onchange="filterPayments()">
+                    <option value="all">All Payments</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                    <option value="refunded">Refunded</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>
+                    <i class="fa-solid fa-search"></i> Search
+                </label>
+                <input type="text" id="searchInput" placeholder="Search payments..." onkeyup="searchPayments()" />
+            </div>
+            <div class="filter-group">
+                <button class="btn-filter" onclick="resetFilters()">
+                    <i class="fa-solid fa-times"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="table-container">
+            <div class="loading-spinner" id="loadingSpinner">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>Loading your payments...</p>
+            </div>
+            <div id="paymentsContent" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Loan ID</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                    <h3>No Payments Found</h3>
+                    <p>You haven't made any payments yet.</p>
+                    <button class="btn-primary" onclick="showMakePayment()">
+                        <i class="fa-solid fa-plus"></i> Make Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Make Payment Modal -->
+        <div id="paymentModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-money-bill-wave"></i> Make Payment</h2>
+                    <button class="modal-close" onclick="closePaymentModal()">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
+                        <div class="form-group">
+                            <label for="paymentLoanId">
+                                <i class="fa-solid fa-wallet"></i> Select Loan *
+                            </label>
+                            <select id="paymentLoanId" required>
+                                <option value="">Select a loan</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentAmount">
+                                <i class="fa-solid fa-coins"></i> Amount (KES) *
+                            </label>
+                            <input type="number" id="paymentAmount" required placeholder="Enter amount" min="100" step="100" />
+                            <span class="input-hint" id="loanBalanceHint">Minimum: KES 100</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentMethod">
+                                <i class="fa-solid fa-credit-card"></i> Payment Method *
+                            </label>
+                            <select id="paymentMethod" required>
+                                <option value="">Select method</option>
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="card">Card</option>
+                                <option value="check">Check</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentType">
+                                <i class="fa-solid fa-tag"></i> Payment Type *
+                            </label>
+                            <select id="paymentType" required>
+                                <option value="">Select type</option>
+                                <option value="payment">Regular Payment</option>
+                                <option value="penalty">Penalty</option>
+                                <option value="fee">Fee</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentReference">
+                                <i class="fa-solid fa-hashtag"></i> Reference (Optional)
+                            </label>
+                            <input type="text" id="paymentReference" placeholder="Enter reference number" />
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentNotes">
+                                <i class="fa-solid fa-pen"></i> Notes (Optional)
+                            </label>
+                            <textarea id="paymentNotes" rows="2" placeholder="Any additional notes..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="closePaymentModal()">Cancel</button>
+                            <button type="submit" class="btn-primary" id="submitPaymentBtn">
+                                <i class="fa-solid fa-paper-plane"></i> Submit Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Details Modal -->
+        <div id="detailsModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fa-solid fa-receipt"></i> Payment Details</h2>
+                    <button class="modal-close" onclick="closeDetailsModal()">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="paymentDetails">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/authGuard.js"></script>
+<script src="../js/payments.js"></script>
+<script src="../js/logout.js"></script>
+</body>
+</html>
