@@ -52,3 +52,64 @@ document.getElementById("logout").onclick = async () => {
     window.location.href = "../login.html";
 
 };
+
+
+function loadDashboard() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Dashboard</h2>
+        <p>Dashboard widgets will appear here.</p>
+    `;
+
+}
+
+function loadCustomers() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Customers</h2>
+        <p>Customer table will appear here.</p>
+    `;
+
+}
+
+function loadApplications() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Loan Applications</h2>
+    `;
+
+}
+
+function loadLoans() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Loans</h2>
+    `;
+
+}
+
+function loadPayments() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Payments</h2>
+    `;
+
+}
+
+function loadReports() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Reports</h2>
+    `;
+
+}
+
+function loadSettings() {
+
+    document.getElementById("content").innerHTML = `
+        <h2>Settings</h2>
+    `;
+
+}
+
+
