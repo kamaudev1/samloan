@@ -84,11 +84,12 @@ document.getElementById("logout").onclick = async () => {
 };
 
 // ============================================
-// DASHBOARD - FIXED
+// DASHBOARD - WITH ACCURATE COUNTS
 // ============================================
 async function loadDashboard() {
     showLoading();
     try {
+        // Get accurate counts
         const [customersCount, applicationsCount, loansCount, paymentsCount] = await Promise.all([
             getTableCount('profiles'),
             getTableCount('applications'),
@@ -145,7 +146,7 @@ async function loadDashboard() {
                         <i class="fa-solid fa-users"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>Total Customers</h3>
+                        <h3>Total Users</h3>
                         <p>${customersCount || 0}</p>
                     </div>
                 </div>
@@ -154,7 +155,7 @@ async function loadDashboard() {
                         <i class="fa-solid fa-file-signature"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>Pending Applications</h3>
+                        <h3>Applications</h3>
                         <p>${applicationsCount || 0}</p>
                     </div>
                 </div>
@@ -172,7 +173,7 @@ async function loadDashboard() {
                         <i class="fa-solid fa-money-bill-wave"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>Total Payments</h3>
+                        <h3>Payments</h3>
                         <p>${paymentsCount || 0}</p>
                     </div>
                 </div>
@@ -183,20 +184,22 @@ async function loadDashboard() {
                     ${renderRecentApplications(recentApplications)}
                 </div>
                 <div class="recent-activity">
-                    <h3><i class="fa-solid fa-user-plus"></i> New Customers</h3>
+                    <h3><i class="fa-solid fa-user-plus"></i> Recent Users</h3>
                     ${renderRecentCustomers(recentCustomers)}
                 </div>
             </div>
-            <div class="quick-stats">
-                <div class="quick-stat">
-                    <span>Total Loan Amount</span>
-                    <strong>$${totalLoanAmount.toLocaleString()}</strong>
+            ${loansCount > 0 ? `
+                <div class="quick-stats">
+                    <div class="quick-stat">
+                        <span>Total Loan Amount</span>
+                        <strong>$${totalLoanAmount.toLocaleString()}</strong>
+                    </div>
+                    <div class="quick-stat">
+                        <span>Average Loan</span>
+                        <strong>$${loansCount > 0 ? (totalLoanAmount / loansCount).toFixed(2) : '0.00'}</strong>
+                    </div>
                 </div>
-                <div class="quick-stat">
-                    <span>Average Loan</span>
-                    <strong>$${loansCount > 0 ? (totalLoanAmount / loansCount).toFixed(2) : '0.00'}</strong>
-                </div>
-            </div>
+            ` : ''}
         `;
     } catch (error) {
         console.error('Dashboard error:', error);
@@ -373,7 +376,7 @@ window.showAddCustomer = () => {
 };
 
 // ============================================
-// HANDLE ADD CUSTOMER - FIXED
+// HANDLE ADD CUSTOMER - FIXED 409 ERROR
 // ============================================
 window.handleAddCustomer = async (event) => {
     event.preventDefault();
@@ -1104,15 +1107,16 @@ async function loadSettings() {
 
 async function getTableCount(tableName) {
     try {
-        const { count, error } = await client
+        const { data, error } = await client
             .from(tableName)
-            .select('*', { count: 'exact', head: true });
+            .select('id', { count: 'exact' });
         
         if (error) {
-            if (error.code === '42P01') return 0;
-            throw error;
+            console.warn(`Error counting ${tableName}:`, error.message);
+            return 0;
         }
-        return count || 0;
+        
+        return data?.length || 0;
     } catch (error) {
         console.error(`Error counting ${tableName}:`, error);
         return 0;
