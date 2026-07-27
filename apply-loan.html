@@ -3,435 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fetch Users</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f1f5f9;
-            padding: 40px 20px;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #0f172a;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .subtitle {
-            color: #64748b;
-            margin-bottom: 20px;
-        }
-        .controls {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-        button {
-            padding: 10px 24px;
-            background: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        button:hover {
-            background: #4338ca;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-secondary {
-            background: #64748b;
-        }
-        .btn-secondary:hover {
-            background: #475569;
-        }
-        .btn-success {
-            background: #22c55e;
-        }
-        .btn-success:hover {
-            background: #16a34a;
-        }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #64748b;
-        }
-        .loading i {
-            font-size: 40px;
-            display: block;
-            margin-bottom: 12px;
-        }
-        .spinner {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        thead {
-            background: #f8fafc;
-        }
-        th {
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 13px;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 14px;
-        }
-        tr:hover {
-            background: #f8fafc;
-        }
-        .badge {
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        .badge-admin {
-            background: #dbeafe;
-            color: #2563eb;
-        }
-        .badge-customer {
-            background: #d1fae5;
-            color: #059669;
-        }
-        .empty {
-            text-align: center;
-            padding: 60px 20px;
-            color: #94a3b8;
-        }
-        .empty i {
-            font-size: 48px;
-            margin-bottom: 12px;
-            display: block;
-        }
-        .stats {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 8px;
-        }
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stat-item strong {
-            font-size: 20px;
-            color: #0f172a;
-        }
-        .stat-item span {
-            color: #64748b;
-            font-size: 14px;
-        }
-        .error {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: none;
-        }
-        .error.show {
-            display: block;
-        }
-        .success {
-            background: #d1fae5;
-            color: #059669;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: none;
-        }
-        .success.show {
-            display: block;
-        }
-        .config-info {
-            background: #f1f5f9;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            font-size: 13px;
-            color: #475569;
-            overflow-x: auto;
-        }
-        .config-info strong {
-            color: #0f172a;
-        }
-    </style>
+    <title>Apply Loan - Sam Loans</title>
+    <link rel="stylesheet" href="../css/apply-loan.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>
-            <span>👥</span> User Fetcher
-        </h1>
-        <p class="subtitle">Simple tool to fetch and view all users from your profiles table</p>
 
-        <div class="config-info">
-            <strong>Config:</strong> Make sure your <code>config.js</code> is loaded with the correct Supabase URL and anon key
-        </div>
-
-        <div class="controls">
-            <button onclick="fetchUsers()" id="fetchBtn">
-                <span>🔄</span> Fetch Users
-            </button>
-            <button class="btn-secondary" onclick="clearResults()">
-                <span>🗑️</span> Clear
-            </button>
-            <button class="btn-success" onclick="copyToClipboard()">
-                <span>📋</span> Copy JSON
-            </button>
-        </div>
-
-        <div id="error" class="error"></div>
-        <div id="success" class="success"></div>
-
-        <div id="stats" class="stats" style="display: none;">
-            <div class="stat-item">
-                <strong id="totalUsers">0</strong>
-                <span>Total Users</span>
+<header>
+    <div class="header-left">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fa-solid fa-building-columns"></i>
             </div>
-            <div class="stat-item">
-                <strong id="adminCount">0</strong>
-                <span>Admins</span>
-            </div>
-            <div class="stat-item">
-                <strong id="customerCount">0</strong>
-                <span>Customers</span>
-            </div>
-        </div>
-
-        <div id="result">
-            <div class="empty">
-                <span>📭</span>
-                <p>Click "Fetch Users" to load data</p>
+            <div class="logo-text">
+                <h2>Sam Loans</h2>
+                <span>Financial Solutions</span>
             </div>
         </div>
     </div>
+    <div class="header-right">
+        <div class="notification-btn">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge">3</span>
+        </div>
+        <div class="header-user">
+            <div class="user-avatar" id="userAvatar">
+                <span id="userInitial">S</span>
+            </div>
+            <div class="user-info">
+                <span id="headerUserName">User</span>
+                <span id="headerUserRole">Customer</span>
+            </div>
+        </div>
+        <button id="logout" class="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+</header>
 
-    <!-- Load Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Load your config -->
-    <script src="../js/config.js"></script>
-
-    <script>
-        // ============================================
-        // FETCH USERS FUNCTION
-        // ============================================
-        async function fetchUsers() {
-            const fetchBtn = document.getElementById('fetchBtn');
-            const errorDiv = document.getElementById('error');
-            const successDiv = document.getElementById('success');
-            const resultDiv = document.getElementById('result');
-            const statsDiv = document.getElementById('stats');
-
-            // Hide previous messages
-            errorDiv.classList.remove('show');
-            successDiv.classList.remove('show');
-            
-            // Disable button and show loading
-            fetchBtn.disabled = true;
-            fetchBtn.innerHTML = '<span class="spinner">⏳</span> Loading...';
-
-            try {
-                // Check if client is defined
-                if (typeof client === 'undefined') {
-                    throw new Error('Supabase client not initialized. Check your config.js');
-                }
-
-                console.log('Fetching users from profiles table...');
-
-                // Fetch all profiles
-                const { data: profiles, error } = await client
-                    .from('profiles')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    if (error.code === '42P01') {
-                        throw new Error('The "profiles" table does not exist. Please create it first.');
-                    }
-                    throw error;
-                }
-
-                console.log('Fetched profiles:', profiles);
-
-                // Show success message
-                successDiv.textContent = `✅ Successfully fetched ${profiles?.length || 0} users!`;
-                successDiv.classList.add('show');
-
-                // Update stats
-                if (profiles && profiles.length > 0) {
-                    statsDiv.style.display = 'flex';
-                    document.getElementById('totalUsers').textContent = profiles.length;
-                    document.getElementById('adminCount').textContent = profiles.filter(p => p.role === 'admin').length;
-                    document.getElementById('customerCount').textContent = profiles.filter(p => p.role === 'customer').length;
-                } else {
-                    statsDiv.style.display = 'none';
-                }
-
-                // Render table
-                if (profiles && profiles.length > 0) {
-                    resultDiv.innerHTML = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>National ID</th>
-                                    <th>Role</th>
-                                    <th>Joined</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${profiles.map((user, index) => `
-                                    <tr>
-                                        <td>${index + 1}</td>
-                                        <td><strong>${user.full_name || 'N/A'}</strong></td>
-                                        <td>${user.email || 'N/A'}</td>
-                                        <td>${user.phone || 'N/A'}</td>
-                                        <td>${user.national_id || 'N/A'}</td>
-                                        <td><span class="badge badge-${user.role || 'customer'}">${user.role || 'customer'}</span></td>
-                                        <td>${user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                        <div style="margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 8px; font-size: 13px; color: #64748b;">
-                            <strong>💡 Tip:</strong> You can copy the data as JSON using the "Copy JSON" button above.
-                        </div>
-                    `;
-                } else {
-                    resultDiv.innerHTML = `
-                        <div class="empty">
-                            <span>📭</span>
-                            <p>No users found in the profiles table</p>
-                            <p style="font-size: 13px; margin-top: 8px; color: #94a3b8;">Try adding some users first</p>
-                        </div>
-                    `;
-                }
-
-            } catch (error) {
-                console.error('Fetch error:', error);
-                errorDiv.textContent = `❌ Error: ${error.message}`;
-                errorDiv.classList.add('show');
-                
-                resultDiv.innerHTML = `
-                    <div class="empty">
-                        <span>⚠️</span>
-                        <p>Failed to fetch users</p>
-                        <p style="font-size: 13px; margin-top: 8px; color: #94a3b8;">${error.message}</p>
-                    </div>
-                `;
-            } finally {
-                // Re-enable button
-                fetchBtn.disabled = false;
-                fetchBtn.innerHTML = '<span>🔄</span> Fetch Users';
-            }
-        }
-
-        // ============================================
-        // CLEAR RESULTS
-        // ============================================
-        function clearResults() {
-            const resultDiv = document.getElementById('result');
-            const statsDiv = document.getElementById('stats');
-            const errorDiv = document.getElementById('error');
-            const successDiv = document.getElementById('success');
-
-            resultDiv.innerHTML = `
-                <div class="empty">
-                    <span>📭</span>
-                    <p>Click "Fetch Users" to load data</p>
+<div class="container">
+    <aside>
+        <div class="sidebar-top">
+            <div class="user-box">
+                <div class="avatar">
+                    <span id="sidebarInitial">S</span>
                 </div>
-            `;
-            statsDiv.style.display = 'none';
-            errorDiv.classList.remove('show');
-            successDiv.classList.remove('show');
-        }
+                <h3 id="welcome">Welcome</h3>
+                <span id="role">Customer</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="apply-loan.html">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <span>Apply Loan</span>
+                            <span class="nav-badge new">New</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="loans.html">
+                            <i class="fa-solid fa-wallet"></i>
+                            <span>My Loans</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="payments.html">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Payments</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="profile.html">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li id="adminMenu" style="display:none;">
+                        <a href="../admin/admin.html">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Admin Panel</span>
+                            <span class="nav-badge admin">Admin</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="sidebar-bottom">
+            <div class="support-card">
+                <i class="fa-solid fa-headset"></i>
+                <div>
+                    <span>Need Help?</span>
+                    <a href="#">Contact Support</a>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-        // ============================================
-        // COPY TO CLIPBOARD
-        // ============================================
-        async function copyToClipboard() {
-            try {
-                const { data: profiles } = await client
-                    .from('profiles')
-                    .select('*');
+    <main>
+        <div class="main-header">
+            <div class="page-title">
+                <h1>Apply for a Loan</h1>
+                <p>Complete the form below to apply for a loan</p>
+            </div>
+        </div>
 
-                if (!profiles || profiles.length === 0) {
-                    alert('No data to copy. Fetch users first!');
-                    return;
-                }
+        <!-- Success Message -->
+        <div id="successMessage" class="success-message" style="display: none;">
+            <i class="fa-solid fa-circle-check"></i>
+            <div>
+                <h3>Application Submitted!</h3>
+                <p>Your loan application has been received and is being reviewed.</p>
+                <button class="btn-secondary" onclick="location.reload()">Apply Again</button>
+                <button class="btn-primary" onclick="window.location.href='loans.html'">View My Loans</button>
+            </div>
+        </div>
 
-                const jsonData = JSON.stringify(profiles, null, 2);
-                await navigator.clipboard.writeText(jsonData);
-                
-                const successDiv = document.getElementById('success');
-                successDiv.textContent = '✅ Data copied to clipboard as JSON!';
-                successDiv.classList.add('show');
-                
-                setTimeout(() => {
-                    successDiv.classList.remove('show');
-                }, 3000);
-            } catch (error) {
-                console.error('Copy error:', error);
-                alert('Failed to copy data. You can select and copy the table manually.');
-            }
-        }
+        <!-- Loan Application Form -->
+        <div id="applicationForm" class="application-form-container">
+            <div class="form-card">
+                <div class="form-header">
+                    <div class="form-progress">
+                        <div class="progress-step active">
+                            <span class="step-number">1</span>
+                            <span class="step-label">Personal Info</span>
+                        </div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step">
+                            <span class="step-number">2</span>
+                            <span class="step-label">Loan Details</span>
+                        </div>
+                        <div class="progress-line"></div>
+                        <div class="progress-step">
+                            <span class="step-number">3</span>
+                            <span class="step-label">Review & Submit</span>
+                        </div>
+                    </div>
+                </div>
 
-        // ============================================
-        // AUTO-FETCH ON LOAD
-        // ============================================
-        // Uncomment the line below to auto-fetch when page loads
-        // window.onload = () => setTimeout(fetchUsers, 500);
-    </script>
+                <form id="loanApplicationForm" onsubmit="handleSubmit(event)">
+                    <!-- Step 1: Personal Information -->
+                    <div class="form-step" id="step1">
+                        <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
+                        <p class="step-desc">Please confirm your personal details</p>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="fullName">
+                                    <i class="fa-solid fa-user"></i>
+                                    Full Name *
+                                </label>
+                                <input type="text" id="fullName" required placeholder="Enter your full name" />
+                            </div>
+                            <div class="form-group">
+                                <label for="email">
+                                    <i class="fa-solid fa-envelope"></i>
+                                    Email Address *
+                                </label>
+                                <input type="email" id="email" required placeholder="Enter your email" />
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">
+                                    <i class="fa-solid fa-phone"></i>
+                                    Phone Number *
+                                </label>
+                                <input type="tel" id="phone" required placeholder="Enter your phone number" />
+                            </div>
+                            <div class="form-group">
+                                <label for="nationalId">
+                                    <i class="fa-solid fa-id-card"></i>
+                                    National ID *
+                                </label>
+                                <input type="text" id="nationalId" required placeholder="Enter your National ID" />
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="address">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    Physical Address
+                                </label>
+                                <input type="text" id="address" placeholder="Enter your physical address" />
+                            </div>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn-next" onclick="nextStep(2)">
+                                Next Step <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Loan Details -->
+                    <div class="form-step" id="step2" style="display: none;">
+                        <h3><i class="fa-solid fa-hand-holding-dollar"></i> Loan Details</h3>
+                        <p class="step-desc">Tell us about the loan you need</p>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="loanAmount">
+                                    <i class="fa-solid fa-coins"></i>
+                                    Loan Amount (KES) *
+                                </label>
+                                <input type="number" id="loanAmount" required placeholder="Enter amount" min="1000" step="100" />
+                                <span class="input-hint">Minimum: KES 1,000</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="loanPurpose">
+                                    <i class="fa-solid fa-bullseye"></i>
+                                    Loan Purpose *
+                                </label>
+                                <select id="loanPurpose" required>
+                                    <option value="">Select purpose</option>
+                                    <option value="Business Expansion">Business Expansion</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Medical Emergency">Medical Emergency</option>
+                                    <option value="Home Improvement">Home Improvement</option>
+                                    <option value="Vehicle Purchase">Vehicle Purchase</option>
+                                    <option value="Debt Consolidation">Debt Consolidation</option>
+                                    <option value="Personal">Personal</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="loanTerm">
+                                    <i class="fa-solid fa-calendar"></i>
+                                    Loan Term (Months) *
+                                </label>
+                                <select id="loanTerm" required>
+                                    <option value="">Select term</option>
+                                    <option value="3">3 Months</option>
+                                    <option value="6">6 Months</option>
+                                    <option value="12">12 Months</option>
+                                    <option value="18">18 Months</option>
+                                    <option value="24">24 Months</option>
+                                    <option value="36">36 Months</option>
+                                    <option value="48">48 Months</option>
+                                    <option value="60">60 Months</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="interestRate">
+                                    <i class="fa-solid fa-percent"></i>
+                                    Interest Rate (%)
+                                </label>
+                                <input type="text" id="interestRate" value="12.5%" disabled />
+                                <span class="input-hint">Fixed rate based on loan amount</span>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="loanNotes">
+                                    <i class="fa-solid fa-pen"></i>
+                                    Additional Notes
+                                </label>
+                                <textarea id="loanNotes" rows="3" placeholder="Any additional information about your loan request..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Loan Summary Preview -->
+                        <div class="loan-summary-preview">
+                            <h4>Loan Preview</h4>
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <span>Monthly Payment</span>
+                                    <strong id="monthlyPayment">KES 0</strong>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Total Interest</span>
+                                    <strong id="totalInterest">KES 0</strong>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Total Amount</span>
+                                    <strong id="totalAmount">KES 0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn-prev" onclick="prevStep(1)">
+                                <i class="fa-solid fa-arrow-left"></i> Previous
+                            </button>
+                            <button type="button" class="btn-next" onclick="nextStep(3)">
+                                Review Application <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Review & Submit -->
+                    <div class="form-step" id="step3" style="display: none;">
+                        <h3><i class="fa-solid fa-file-circle-check"></i> Review & Submit</h3>
+                        <p class="step-desc">Please review your application before submitting</p>
+
+                        <div class="review-section">
+                            <div class="review-card">
+                                <h4><i class="fa-solid fa-user"></i> Personal Information</h4>
+                                <div class="review-grid">
+                                    <div><span>Full Name</span> <strong id="reviewName">-</strong></div>
+                                    <div><span>Email</span> <strong id="reviewEmail">-</strong></div>
+                                    <div><span>Phone</span> <strong id="reviewPhone">-</strong></div>
+                                    <div><span>National ID</span> <strong id="reviewNationalId">-</strong></div>
+                                    <div><span>Address</span> <strong id="reviewAddress">-</strong></div>
+                                </div>
+                            </div>
+                            <div class="review-card">
+                                <h4><i class="fa-solid fa-hand-holding-dollar"></i> Loan Details</h4>
+                                <div class="review-grid">
+                                    <div><span>Amount</span> <strong id="reviewAmount">-</strong></div>
+                                    <div><span>Purpose</span> <strong id="reviewPurpose">-</strong></div>
+                                    <div><span>Term</span> <strong id="reviewTerm">-</strong></div>
+                                    <div><span>Interest Rate</span> <strong id="reviewRate">12.5%</strong></div>
+                                    <div><span>Monthly Payment</span> <strong id="reviewMonthly">-</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="terms-agreement">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="termsCheck" required />
+                                <span class="checkmark"></span>
+                                I agree to the <a href="#" onclick="showTerms()">Terms and Conditions</a> and confirm that all information provided is accurate.
+                            </label>
+                        </div>
+
+                        <div class="form-navigation">
+                            <button type="button" class="btn-prev" onclick="prevStep(2)">
+                                <i class="fa-solid fa-arrow-left"></i> Previous
+                            </button>
+                            <button type="submit" class="btn-submit" id="submitBtn">
+                                <i class="fa-solid fa-paper-plane"></i> Submit Application
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/authGuard.js"></script>
+<script src="../js/apply-loan.js"></script>
+<script src="../js/logout.js"></script>
 </body>
 </html>
