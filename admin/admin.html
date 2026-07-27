@@ -2,154 +2,83 @@
 <html lang="en">
 
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Sam Loans Admin</title>
-
-<link rel="stylesheet" href="../css/admin.css">
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sam Loans Admin</title>
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 
 <body>
-
-<div class="admin">
-
-    <!-- Sidebar -->
-
-    <aside>
-
-        <div class="logo">
-
-            <i class="fa-solid fa-building-columns"></i>
-
-            <h2>Sam Loans</h2>
-
-        </div>
-
-        <ul>
-
-            <li class="active" data-page="dashboard">
-
-                <i class="fa-solid fa-chart-line"></i>
-
-                Dashboard
-
-            </li>
-
-            <li data-page="customers">
-
-                <i class="fa-solid fa-users"></i>
-
-                Customers
-
-            </li>
-
-            <li data-page="applications">
-
-                <i class="fa-solid fa-file-signature"></i>
-
-                Applications
-
-            </li>
-
-            <li data-page="loans">
-
-                <i class="fa-solid fa-wallet"></i>
-
-                Loans
-
-            </li>
-
-            <li data-page="payments">
-
-                <i class="fa-solid fa-money-bill-wave"></i>
-
-                Payments
-
-            </li>
-
-            <li data-page="reports">
-
-                <i class="fa-solid fa-chart-pie"></i>
-
-                Reports
-
-            </li>
-
-            <li data-page="settings">
-
-                <i class="fa-solid fa-gear"></i>
-
-                Settings
-
-            </li>
-
-            <li id="logout">
-
-                <i class="fa-solid fa-right-from-bracket"></i>
-
-                Logout
-
-            </li>
-
-        </ul>
-
-    </aside>
-
-    <!-- Main -->
-
-    <main>
-
-        <header>
-
-            <div>
-
-                <h1 id="pageTitle">
-
+    <div class="admin">
+        <!-- Sidebar -->
+        <aside>
+            <div class="logo">
+                <i class="fa-solid fa-building-columns"></i>
+                <h2>Sam Loans</h2>
+            </div>
+            <ul>
+                <li class="active" data-page="dashboard">
+                    <i class="fa-solid fa-chart-line"></i>
                     Dashboard
+                </li>
+                <li data-page="customers">
+                    <i class="fa-solid fa-users"></i>
+                    Customers
+                </li>
+                <li data-page="applications">
+                    <i class="fa-solid fa-file-signature"></i>
+                    Applications
+                </li>
+                <li data-page="loans">
+                    <i class="fa-solid fa-wallet"></i>
+                    Loans
+                </li>
+                <li data-page="payments">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                    Payments
+                </li>
+                <li data-page="reports">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Reports
+                </li>
+                <li data-page="settings">
+                    <i class="fa-solid fa-gear"></i>
+                    Settings
+                </li>
+                <li id="logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    Logout
+                </li>
+            </ul>
+        </aside>
 
-                </h1>
+        <!-- Main -->
+        <main>
+            <header>
+                <div>
+                    <h1 id="pageTitle">Dashboard</h1>
+                    <p id="welcomeAdmin">Welcome</p>
+                </div>
+                <div class="admin-profile">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span id="adminName">Admin</span>
+                </div>
+            </header>
+            <section id="content">
+                <!-- Dynamic content loads here -->
+                <div class="loading-spinner">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    Loading...
+                </div>
+            </section>
+        </main>
+    </div>
 
-                <p id="welcomeAdmin">
-
-                    Welcome
-
-                </p>
-
-            </div>
-
-            <div class="admin-profile">
-
-                <i class="fa-solid fa-user-shield"></i>
-
-            </div>
-
-        </header>
-
-        <section id="content">
-
-            <!-- Dynamic content loads here -->
-
-        </section>
-
-    </main>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="../js/config.js"></script>
-
-<script src="../js/adminGuard.js"></script>
-
-<script src="../js/admin.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/adminGuard.js"></script>
+    <script src="../js/admin.js"></script>
 </body>
 
 </html>
