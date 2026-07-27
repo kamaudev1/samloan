@@ -1,34 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Dashboard</title>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Customer Dashboard</title>
+
+<link rel="stylesheet" href="../css/dashboard.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
 </head>
 
 <body>
 
-<h1>Customer Dashboard</h1>
+<header>
 
-<button id="logout">
+    <h2>Sam Loans</h2>
 
-Logout
+    <button id="logout">
 
-</button>
+        Logout
+
+    </button>
+
+</header>
+
+<div class="container">
+
+<aside>
+
+<ul>
+
+<li><a href="dashboard.html">Dashboard</a></li>
+
+<li><a href="apply-loan.html">Apply Loan</a></li>
+
+<li><a href="loans.html">My Loans</a></li>
+
+<li><a href="payments.html">Payments</a></li>
+
+<li><a href="profile.html">Profile</a></li>
+
+</ul>
+
+</aside>
+
+<main>
+
+<h1 id="welcome"></h1>
+
+<div class="cards">
+
+<div class="card">
+
+<h3>Active Loan</h3>
+
+<p>KES 0.00</p>
+
+</div>
+
+<div class="card">
+
+<h3>Balance</h3>
+
+<p>KES 0.00</p>
+
+</div>
+
+<div class="card">
+
+<h3>Status</h3>
+
+<p>No Active Loan</p>
+
+</div>
+
+<div class="card">
+
+<h3>Next Payment</h3>
+
+<p>--</p>
+
+</div>
+
+</div>
+
+</main>
+
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="js/config.js"></script>
+<script src="../js/config.js"></script>
 
-<script>
+<script src="../js/authGuard.js"></script>
 
-document.getElementById("logout").onclick = async ()=>{
+<script src="../js/dashboard.js"></script>
 
-await client.auth.signOut();
-
-location.href="login.html";
-
-};
-
-</script>
+<script src="../js/logout.js"></script>
 
 </body>
 </html>
