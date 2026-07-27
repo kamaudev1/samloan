@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+</head>
+
+<body>
+
+<h1>Customer Dashboard</h1>
+
+<button id="logout">
+
+Logout
+
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/config.js"></script>
+
+<script>
+
+document.getElementById("logout").onclick = async ()=>{
+
+await client.auth.signOut();
+
+location.href="login.html";
+
+};
+
+</script>
+
+</body>
+</html>
