@@ -1,3 +1,48 @@
+.auth-container{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:40px 20px;
+    background:#f4f7fb;
+}
+
+.auth-card{
+    width:100%;
+    max-width:480px;
+    background:#fff;
+    border-radius:16px;
+    padding:35px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.auth-card h2{
+    margin-bottom:10px;
+    color:#1f2937;
+}
+
+.auth-card p{
+    color:#6b7280;
+    margin-bottom:20px;
+}
+
+.terms{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:15px 0 20px;
+    font-size:14px;
+}
+
+.terms input{
+    width:auto;
+    margin:0;
+}
+
+.bottom{
+    text-align:center;
+    margin-top:20px;
+}
 *{
     margin:0;
     padding:0;
