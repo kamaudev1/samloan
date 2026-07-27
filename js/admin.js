@@ -30,21 +30,17 @@ const pages = {
         adminInfo = await requireAdmin();
         if (!adminInfo) return;
 
-        // Update welcome message
         const welcomeEl = document.getElementById("welcomeAdmin");
         if (adminInfo.profile?.full_name) {
             welcomeEl.innerHTML = `Welcome, <strong>${adminInfo.profile.full_name}</strong>`;
         }
 
-        // Update admin name in header
         const adminNameEl = document.getElementById("adminName");
         if (adminNameEl && adminInfo.profile?.full_name) {
             adminNameEl.textContent = adminInfo.profile.full_name;
         }
 
-        // Load default page
         await loadDashboard();
-
     } catch (error) {
         console.error('Initialization error:', error);
         showError('Failed to initialize admin panel');
@@ -57,15 +53,12 @@ const pages = {
 document.querySelectorAll("aside li[data-page]").forEach(item => {
     item.onclick = async () => {
         if (isLoading) return;
-
         const page = item.dataset.page;
         if (page === currentPage) return;
 
-        // Update active state
         document.querySelectorAll("aside li").forEach(li => li.classList.remove("active"));
         item.classList.add("active");
 
-        // Update title
         const pageConfig = pages[page];
         if (pageConfig) {
             document.getElementById("pageTitle").innerText = pageConfig.title;
@@ -81,9 +74,7 @@ document.querySelectorAll("aside li[data-page]").forEach(item => {
 // ============================================
 document.getElementById("logout").onclick = async () => {
     try {
-        const confirmed = confirm('Are you sure you want to logout?');
-        if (!confirmed) return;
-
+        if (!confirm('Are you sure you want to logout?')) return;
         await client.auth.signOut();
         window.location.href = "../login.html";
     } catch (error) {
@@ -98,7 +89,6 @@ document.getElementById("logout").onclick = async () => {
 async function loadDashboard() {
     showLoading();
     try {
-        // Fetch real data
         const [customersCount, applicationsCount, loansCount, paymentsCount] = await Promise.all([
             getTableCount('profiles'),
             getTableCount('applications'),
@@ -106,31 +96,33 @@ async function loadDashboard() {
             getTableCount('payments')
         ]);
 
-        // Get recent applications
         const { data: recentApplications } = await client
             .from('applications')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(5)
+            .catch(() => ({ data: [] }));
 
-        // Get recent customers
         const { data: recentCustomers } = await client
             .from('profiles')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(5)
+            .catch(() => ({ data: [] }));
 
-        // Calculate total loan amount
+        let totalLoanAmount = 0;
         const { data: loanData } = await client
             .from('loans')
             .select('amount')
-            .eq('status', 'active');
+            .eq('status', 'active')
+            .catch(() => ({ data: [] }));
         
-        const totalLoanAmount = loanData?.reduce((sum, loan) => sum + (loan.amount || 0), 0) || 0;
+        if (loanData) {
+            totalLoanAmount = loanData.reduce((sum, loan) => sum + (loan.amount || 0), 0);
+        }
 
         document.getElementById("content").innerHTML = `
             <div class="dashboard-grid">
-                <!-- Stats Cards -->
                 <div class="stat-card">
                     <div class="stat-icon blue">
                         <i class="fa-solid fa-users"></i>
@@ -168,22 +160,16 @@ async function loadDashboard() {
                     </div>
                 </div>
             </div>
-
             <div class="dashboard-grid-two">
-                <!-- Recent Applications -->
                 <div class="recent-activity">
                     <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Applications</h3>
-                    ${renderRecentApplications(recentApplications)}
+                    ${renderRecentApplications(recentApplications || [])}
                 </div>
-
-                <!-- Recent Customers -->
                 <div class="recent-activity">
                     <h3><i class="fa-solid fa-user-plus"></i> New Customers</h3>
-                    ${renderRecentCustomers(recentCustomers)}
+                    ${renderRecentCustomers(recentCustomers || [])}
                 </div>
             </div>
-
-            <!-- Quick Stats -->
             <div class="quick-stats">
                 <div class="quick-stat">
                     <span>Total Loan Amount</span>
@@ -195,7 +181,6 @@ async function loadDashboard() {
                 </div>
             </div>
         `;
-
     } catch (error) {
         console.error('Dashboard error:', error);
         showError('Failed to load dashboard data');
@@ -205,12 +190,11 @@ async function loadDashboard() {
 }
 
 // ============================================
-// CUSTOMERS - Fetch from profiles table
+// CUSTOMERS - Fetch ALL users regardless of role
 // ============================================
 async function loadCustomers() {
     showLoading();
     try {
-        // Fetch all customers from profiles table
         const { data: customers, error } = await client
             .from('profiles')
             .select('*')
@@ -220,15 +204,12 @@ async function loadCustomers() {
 
         customersData = customers || [];
 
-        // Filter out admin users if needed (optional)
-        const filteredCustomers = customersData.filter(c => c.role !== 'admin');
-
         document.getElementById("content").innerHTML = `
             <div class="page-header">
-                <h2><i class="fa-solid fa-users"></i> Customers</h2>
+                <h2><i class="fa-solid fa-users"></i> All Users</h2>
                 <div class="page-actions">
                     <button class="btn-primary" onclick="showAddCustomer()">
-                        <i class="fa-solid fa-plus"></i> Add Customer
+                        <i class="fa-solid fa-plus"></i> Add User
                     </button>
                     <button class="btn-secondary" onclick="refreshCustomers()">
                         <i class="fa-solid fa-rotate"></i> Refresh
@@ -239,58 +220,62 @@ async function loadCustomers() {
                 <div class="table-toolbar">
                     <div class="search-box">
                         <i class="fa-solid fa-search"></i>
-                        <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="searchCustomers()" />
+                        <input type="text" id="customerSearch" placeholder="Search users..." onkeyup="searchCustomers()" />
                     </div>
                     <div class="table-stats">
-                        <span>Total: <strong>${filteredCustomers.length}</strong> customers</span>
+                        <span>Total: <strong>${customersData.length}</strong> users</span>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Full Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>National ID</th>
-                            <th>Role</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customersTableBody">
-                        ${filteredCustomers?.length ? filteredCustomers.map(customer => `
+                ${customersData?.length ? `
+                    <table>
+                        <thead>
                             <tr>
-                                <td><strong>${customer.full_name || 'N/A'}</strong></td>
-                                <td>${customer.email || 'N/A'}</td>
-                                <td>${customer.phone || 'N/A'}</td>
-                                <td>${customer.national_id || 'N/A'}</td>
-                                <td><span class="status-badge ${customer.role === 'admin' ? 'admin' : 'customer'}">${customer.role || 'customer'}</span></td>
-                                <td>${customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'N/A'}</td>
-                                <td>
-                                    <button class="btn-icon" onclick="viewCustomer('${customer.id}')" title="View">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </button>
-                                    <button class="btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </button>
-                                    <button class="btn-icon ${customer.role === 'admin' ? 'disabled' : 'danger'}" 
-                                            onclick="${customer.role === 'admin' ? '' : `deleteCustomer('${customer.id}')`}" 
-                                            title="${customer.role === 'admin' ? 'Cannot delete admin' : 'Delete'}">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </td>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>National ID</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
                             </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="7" class="empty-state">
-                                    <i class="fa-solid fa-users"></i>
-                                    <p>No customers found</p>
-                                    <button class="btn-primary" onclick="showAddCustomer()">Add your first customer</button>
-                                </td>
-                            </tr>
-                        `}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="customersTableBody">
+                            ${customersData.map(customer => `
+                                <tr>
+                                    <td><strong>${customer.full_name || 'N/A'}</strong></td>
+                                    <td>${customer.email || 'N/A'}</td>
+                                    <td>${customer.phone || 'N/A'}</td>
+                                    <td>${customer.national_id || 'N/A'}</td>
+                                    <td><span class="status-badge ${customer.role || 'customer'}">${customer.role || 'customer'}</span></td>
+                                    <td>${customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-icon" onclick="viewCustomer('${customer.id}')" title="View">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        <button class="btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        ${customer.role !== 'admin' ? `
+                                            <button class="btn-icon danger" onclick="deleteCustomer('${customer.id}')" title="Delete">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        ` : `
+                                            <button class="btn-icon disabled" title="Cannot delete admin">
+                                                <i class="fa-solid fa-lock"></i>
+                                            </button>
+                                        `}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-users"></i>
+                        <p>No users found</p>
+                        <button class="btn-primary" onclick="showAddCustomer()">Add your first user</button>
+                    </div>
+                `}
             </div>
         `;
     } catch (error) {
@@ -302,36 +287,30 @@ async function loadCustomers() {
 }
 
 // ============================================
-// CUSTOMER SEARCH FUNCTION
+// CUSTOMER SEARCH
 // ============================================
 function searchCustomers() {
     const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
     const rows = document.querySelectorAll('#customersTableBody tr');
-    
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
 }
 
-// ============================================
-// REFRESH CUSTOMERS
-// ============================================
 function refreshCustomers() {
     loadCustomers();
 }
 
 // ============================================
-// CUSTOMER CRUD OPERATIONS
+// ADD CUSTOMER - FIXED 409 ERROR
 // ============================================
-
-// Add Customer - Show modal/form
 window.showAddCustomer = () => {
     document.getElementById("content").innerHTML = `
         <div class="page-header">
-            <h2><i class="fa-solid fa-user-plus"></i> Add New Customer</h2>
+            <h2><i class="fa-solid fa-user-plus"></i> Add New User</h2>
             <button class="btn-secondary" onclick="loadCustomers()">
-                <i class="fa-solid fa-arrow-left"></i> Back to Customers
+                <i class="fa-solid fa-arrow-left"></i> Back to Users
             </button>
         </div>
         <div class="form-container">
@@ -368,7 +347,7 @@ window.showAddCustomer = () => {
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="loadCustomers()">Cancel</button>
                     <button type="submit" class="btn-primary">
-                        <i class="fa-solid fa-user-plus"></i> Create Customer
+                        <i class="fa-solid fa-user-plus"></i> Create User
                     </button>
                 </div>
             </form>
@@ -376,7 +355,9 @@ window.showAddCustomer = () => {
     `;
 };
 
-// Handle Add Customer
+// ============================================
+// HANDLE ADD CUSTOMER - FIXED 409 ERROR
+// ============================================
 window.handleAddCustomer = async (event) => {
     event.preventDefault();
     
@@ -398,9 +379,21 @@ window.handleAddCustomer = async (event) => {
     }
 
     try {
-        showToast('Creating customer...', 'info');
-        
-        // 1. Create auth user
+        showToast('Creating user...', 'info');
+
+        // Check if user already exists
+        const { data: existingUser } = await client
+            .from('profiles')
+            .select('email')
+            .eq('email', email)
+            .single();
+
+        if (existingUser) {
+            showToast('A user with this email already exists!', 'error');
+            return;
+        }
+
+        // Create auth user
         const { data: authData, error: authError } = await client.auth.signUp({
             email: email,
             password: password,
@@ -412,39 +405,72 @@ window.handleAddCustomer = async (event) => {
             }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+            if (authError.message.includes('already registered')) {
+                showToast('This email is already registered. Please use a different email.', 'error');
+                return;
+            }
+            throw authError;
+        }
 
         if (!authData.user) {
             throw new Error('Failed to create user');
         }
 
-        // 2. Create profile
-        const { error: profileError } = await client
+        // Check if profile already exists (race condition check)
+        const { data: existingProfile } = await client
             .from('profiles')
-            .insert({
-                id: authData.user.id,
-                full_name: fullName,
-                email: email,
-                phone: phone || null,
-                national_id: nationalId || null,
-                role: role
-            });
+            .select('id')
+            .eq('id', authData.user.id)
+            .single();
 
-        if (profileError) {
-            console.error('Profile creation error:', profileError);
-            throw new Error('Failed to create customer profile');
+        if (existingProfile) {
+            showToast('User already has a profile. Updating...', 'info');
+            // Update existing profile
+            const { error: updateError } = await client
+                .from('profiles')
+                .update({
+                    full_name: fullName,
+                    email: email,
+                    phone: phone || null,
+                    national_id: nationalId || null,
+                    role: role
+                })
+                .eq('id', authData.user.id);
+
+            if (updateError) throw updateError;
+        } else {
+            // Create profile
+            const { error: profileError } = await client
+                .from('profiles')
+                .insert({
+                    id: authData.user.id,
+                    full_name: fullName,
+                    email: email,
+                    phone: phone || null,
+                    national_id: nationalId || null,
+                    role: role
+                });
+
+            if (profileError) {
+                // If profile creation fails, the auth user still exists
+                console.error('Profile creation error:', profileError);
+                throw new Error('Failed to create user profile. Please try again.');
+            }
         }
 
-        showToast('Customer created successfully!', 'success');
+        showToast('User created successfully!', 'success');
         setTimeout(() => loadCustomers(), 1500);
 
     } catch (error) {
         console.error('Add customer error:', error);
-        showToast(error.message || 'Failed to create customer', 'error');
+        showToast(error.message || 'Failed to create user', 'error');
     }
 };
 
-// View Customer
+// ============================================
+// VIEW CUSTOMER
+// ============================================
 window.viewCustomer = async (id) => {
     try {
         const { data: customer, error } = await client
@@ -457,9 +483,9 @@ window.viewCustomer = async (id) => {
 
         document.getElementById("content").innerHTML = `
             <div class="page-header">
-                <h2><i class="fa-solid fa-user"></i> Customer Details</h2>
+                <h2><i class="fa-solid fa-user"></i> User Details</h2>
                 <button class="btn-secondary" onclick="loadCustomers()">
-                    <i class="fa-solid fa-arrow-left"></i> Back to Customers
+                    <i class="fa-solid fa-arrow-left"></i> Back to Users
                 </button>
             </div>
             <div class="customer-details">
@@ -510,11 +536,13 @@ window.viewCustomer = async (id) => {
         `;
     } catch (error) {
         console.error('View customer error:', error);
-        showToast('Failed to load customer details', 'error');
+        showToast('Failed to load user details', 'error');
     }
 };
 
-// Edit Customer
+// ============================================
+// EDIT CUSTOMER
+// ============================================
 window.editCustomer = async (id) => {
     try {
         const { data: customer, error } = await client
@@ -527,9 +555,9 @@ window.editCustomer = async (id) => {
 
         document.getElementById("content").innerHTML = `
             <div class="page-header">
-                <h2><i class="fa-solid fa-user-pen"></i> Edit Customer</h2>
+                <h2><i class="fa-solid fa-user-pen"></i> Edit User</h2>
                 <button class="btn-secondary" onclick="loadCustomers()">
-                    <i class="fa-solid fa-arrow-left"></i> Back to Customers
+                    <i class="fa-solid fa-arrow-left"></i> Back to Users
                 </button>
             </div>
             <div class="form-container">
@@ -562,7 +590,7 @@ window.editCustomer = async (id) => {
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="loadCustomers()">Cancel</button>
                         <button type="submit" class="btn-primary">
-                            <i class="fa-solid fa-save"></i> Update Customer
+                            <i class="fa-solid fa-save"></i> Update User
                         </button>
                     </div>
                 </form>
@@ -570,11 +598,13 @@ window.editCustomer = async (id) => {
         `;
     } catch (error) {
         console.error('Edit customer error:', error);
-        showToast('Failed to load customer for editing', 'error');
+        showToast('Failed to load user for editing', 'error');
     }
 };
 
-// Handle Edit Customer
+// ============================================
+// HANDLE EDIT CUSTOMER
+// ============================================
 window.handleEditCustomer = async (event, id) => {
     event.preventDefault();
 
@@ -590,6 +620,19 @@ window.handleEditCustomer = async (event, id) => {
     }
 
     try {
+        // Check if email is taken by another user
+        const { data: existingUser } = await client
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .neq('id', id)
+            .single();
+
+        if (existingUser) {
+            showToast('Email is already taken by another user', 'error');
+            return;
+        }
+
         const { error } = await client
             .from('profiles')
             .update({
@@ -604,22 +647,24 @@ window.handleEditCustomer = async (event, id) => {
 
         if (error) throw error;
 
-        showToast('Customer updated successfully!', 'success');
+        showToast('User updated successfully!', 'success');
         setTimeout(() => loadCustomers(), 1500);
     } catch (error) {
         console.error('Update customer error:', error);
-        showToast('Failed to update customer: ' + error.message, 'error');
+        showToast('Failed to update user: ' + error.message, 'error');
     }
 };
 
-// Delete Customer
+// ============================================
+// DELETE CUSTOMER
+// ============================================
 window.deleteCustomer = async (id) => {
-    if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
         return;
     }
 
     try {
-        // First, check if customer has any active loans
+        // Check if customer has active loans
         const { data: loans, error: loansError } = await client
             .from('loans')
             .select('id')
@@ -629,7 +674,7 @@ window.deleteCustomer = async (id) => {
         if (loansError) throw loansError;
 
         if (loans && loans.length > 0) {
-            showToast('Cannot delete customer with active loans', 'error');
+            showToast('Cannot delete user with active loans', 'error');
             return;
         }
 
@@ -641,21 +686,11 @@ window.deleteCustomer = async (id) => {
 
         if (error) throw error;
 
-        // Also delete from auth (admin API required)
-        try {
-            const { error: authError } = await client.auth.admin.deleteUser(id);
-            if (authError) {
-                console.warn('Auth user deletion failed:', authError);
-            }
-        } catch (authErr) {
-            console.warn('Auth deletion not available:', authErr);
-        }
-
-        showToast('Customer deleted successfully!', 'success');
+        showToast('User deleted successfully!', 'success');
         loadCustomers();
     } catch (error) {
         console.error('Delete customer error:', error);
-        showToast('Failed to delete customer: ' + error.message, 'error');
+        showToast('Failed to delete user: ' + error.message, 'error');
     }
 };
 
@@ -670,7 +705,13 @@ async function loadApplications() {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '42P01') {
+                showError('The "applications" table does not exist. Please create it first.');
+                return;
+            }
+            throw error;
+        }
 
         applicationsData = applications || [];
 
@@ -696,51 +737,51 @@ async function loadApplications() {
                         <span>Total: <strong>${applicationsData.length}</strong> applications</span>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Applicant</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="applicationsTableBody">
-                        ${applicationsData?.length ? applicationsData.map(app => `
+                ${applicationsData?.length ? `
+                    <table>
+                        <thead>
                             <tr>
-                                <td><strong>${app.applicant_name || 'N/A'}</strong></td>
-                                <td>$${app.amount?.toLocaleString() || '0'}</td>
-                                <td><span class="status-badge ${app.status || 'pending'}">${app.status || 'Pending'}</span></td>
-                                <td>${app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A'}</td>
-                                <td>
-                                    <button class="btn-icon" onclick="viewApplication('${app.id}')" title="View">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </button>
-                                    <button class="btn-icon" onclick="editApplication('${app.id}')" title="Edit">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </button>
-                                    ${app.status === 'pending' ? `
-                                        <button class="btn-icon success" onclick="approveApplication('${app.id}')" title="Approve">
-                                            <i class="fa-solid fa-check"></i>
-                                        </button>
-                                        <button class="btn-icon danger" onclick="rejectApplication('${app.id}')" title="Reject">
-                                            <i class="fa-solid fa-times"></i>
-                                        </button>
-                                    ` : ''}
-                                </td>
+                                <th>Applicant</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
                             </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="5" class="empty-state">
-                                    <i class="fa-solid fa-file-signature"></i>
-                                    <p>No applications found</p>
-                                    <button class="btn-primary" onclick="showAddApplication()">Create new application</button>
-                                </td>
-                            </tr>
-                        `}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="applicationsTableBody">
+                            ${applicationsData.map(app => `
+                                <tr>
+                                    <td><strong>${app.applicant_name || 'N/A'}</strong></td>
+                                    <td>$${app.amount?.toLocaleString() || '0'}</td>
+                                    <td><span class="status-badge ${app.status || 'pending'}">${app.status || 'Pending'}</span></td>
+                                    <td>${app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-icon" onclick="viewApplication('${app.id}')" title="View">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        <button class="btn-icon" onclick="editApplication('${app.id}')" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        ${app.status === 'pending' ? `
+                                            <button class="btn-icon success" onclick="approveApplication('${app.id}')" title="Approve">
+                                                <i class="fa-solid fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon danger" onclick="rejectApplication('${app.id}')" title="Reject">
+                                                <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-file-signature"></i>
+                        <p>No applications found</p>
+                        <button class="btn-primary" onclick="showAddApplication()">Create new application</button>
+                    </div>
+                `}
             </div>
         `;
     } catch (error) {
@@ -751,11 +792,9 @@ async function loadApplications() {
     }
 }
 
-// Application Search
 function searchApplications() {
     const searchTerm = document.getElementById('applicationSearch')?.value.toLowerCase() || '';
     const rows = document.querySelectorAll('#applicationsTableBody tr');
-    
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
@@ -777,7 +816,13 @@ async function loadLoans() {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '42P01') {
+                showError('The "loans" table does not exist. Please create it first.');
+                return;
+            }
+            throw error;
+        }
 
         loansData = loans || [];
 
@@ -803,50 +848,50 @@ async function loadLoans() {
                         <span>Total: <strong>${loansData.length}</strong> loans</span>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Amount</th>
-                            <th>Interest Rate</th>
-                            <th>Status</th>
-                            <th>Due Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="loansTableBody">
-                        ${loansData?.length ? loansData.map(loan => `
+                ${loansData?.length ? `
+                    <table>
+                        <thead>
                             <tr>
-                                <td><strong>${loan.customer_name || 'N/A'}</strong></td>
-                                <td>$${loan.amount?.toLocaleString() || '0'}</td>
-                                <td>${loan.interest_rate || 0}%</td>
-                                <td><span class="status-badge ${loan.status || 'active'}">${loan.status || 'Active'}</span></td>
-                                <td>${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</td>
-                                <td>
-                                    <button class="btn-icon" onclick="viewLoan('${loan.id}')" title="View">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </button>
-                                    <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </button>
-                                    ${loan.status === 'active' ? `
-                                        <button class="btn-icon success" onclick="makePayment('${loan.id}')" title="Make Payment">
-                                            <i class="fa-solid fa-money-bill"></i>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Interest Rate</th>
+                                <th>Status</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loansTableBody">
+                            ${loansData.map(loan => `
+                                <tr>
+                                    <td><strong>${loan.customer_name || 'N/A'}</strong></td>
+                                    <td>$${loan.amount?.toLocaleString() || '0'}</td>
+                                    <td>${loan.interest_rate || 0}%</td>
+                                    <td><span class="status-badge ${loan.status || 'active'}">${loan.status || 'Active'}</span></td>
+                                    <td>${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-icon" onclick="viewLoan('${loan.id}')" title="View">
+                                            <i class="fa-solid fa-eye"></i>
                                         </button>
-                                    ` : ''}
-                                </td>
-                            </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <i class="fa-solid fa-wallet"></i>
-                                    <p>No loans found</p>
-                                    <button class="btn-primary" onclick="showAddLoan()">Disburse first loan</button>
-                                </td>
-                            </tr>
-                        `}
-                    </tbody>
-                </table>
+                                        <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        ${loan.status === 'active' ? `
+                                            <button class="btn-icon success" onclick="makePayment('${loan.id}')" title="Make Payment">
+                                                <i class="fa-solid fa-money-bill"></i>
+                                            </button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-wallet"></i>
+                        <p>No loans found</p>
+                        <button class="btn-primary" onclick="showAddLoan()">Disburse first loan</button>
+                    </div>
+                `}
             </div>
         `;
     } catch (error) {
@@ -860,7 +905,6 @@ async function loadLoans() {
 function searchLoans() {
     const searchTerm = document.getElementById('loanSearch')?.value.toLowerCase() || '';
     const rows = document.querySelectorAll('#loansTableBody tr');
-    
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
@@ -882,7 +926,13 @@ async function loadPayments() {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '42P01') {
+                showError('The "payments" table does not exist. Please create it first.');
+                return;
+            }
+            throw error;
+        }
 
         paymentsData = payments || [];
 
@@ -908,48 +958,48 @@ async function loadPayments() {
                         <span>Total: <strong>${paymentsData.length}</strong> payments</span>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Loan ID</th>
-                            <th>Amount</th>
-                            <th>Type</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="paymentsTableBody">
-                        ${paymentsData?.length ? paymentsData.map(payment => `
+                ${paymentsData?.length ? `
+                    <table>
+                        <thead>
                             <tr>
-                                <td><strong>${payment.customer_name || 'N/A'}</strong></td>
-                                <td>${payment.loan_id || 'N/A'}</td>
-                                <td>$${payment.amount?.toLocaleString() || '0'}</td>
-                                <td><span class="status-badge ${payment.type || 'payment'}">${payment.type || 'Payment'}</span></td>
-                                <td>${payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'}</td>
-                                <td>
-                                    <button class="btn-icon" onclick="viewPayment('${payment.id}')" title="View">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </button>
-                                    <button class="btn-icon" onclick="editPayment('${payment.id}')" title="Edit">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </button>
-                                    <button class="btn-icon danger" onclick="deletePayment('${payment.id}')" title="Delete">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </td>
+                                <th>Customer</th>
+                                <th>Loan ID</th>
+                                <th>Amount</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Actions</th>
                             </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <i class="fa-solid fa-money-bill-wave"></i>
-                                    <p>No payments found</p>
-                                    <button class="btn-primary" onclick="showAddPayment()">Record first payment</button>
-                                </td>
-                            </tr>
-                        `}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            ${paymentsData.map(payment => `
+                                <tr>
+                                    <td><strong>${payment.customer_name || 'N/A'}</strong></td>
+                                    <td>${payment.loan_id || 'N/A'}</td>
+                                    <td>$${payment.amount?.toLocaleString() || '0'}</td>
+                                    <td><span class="status-badge ${payment.type || 'payment'}">${payment.type || 'Payment'}</span></td>
+                                    <td>${payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-icon" onclick="viewPayment('${payment.id}')" title="View">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        <button class="btn-icon" onclick="editPayment('${payment.id}')" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <button class="btn-icon danger" onclick="deletePayment('${payment.id}')" title="Delete">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                        <p>No payments found</p>
+                        <button class="btn-primary" onclick="showAddPayment()">Record first payment</button>
+                    </div>
+                `}
             </div>
         `;
     } catch (error) {
@@ -963,7 +1013,6 @@ async function loadPayments() {
 function searchPayments() {
     const searchTerm = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
     const rows = document.querySelectorAll('#paymentsTableBody tr');
-    
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
@@ -985,8 +1034,8 @@ async function loadReports() {
         <div class="reports-grid">
             <div class="report-card" onclick="generateReport('customers')">
                 <i class="fa-solid fa-users"></i>
-                <h3>Customer Report</h3>
-                <p>View customer analytics and demographics</p>
+                <h3>User Report</h3>
+                <p>View user analytics and demographics</p>
             </div>
             <div class="report-card" onclick="generateReport('applications')">
                 <i class="fa-solid fa-file-signature"></i>
@@ -1061,30 +1110,26 @@ async function loadSettings() {
 // HELPER FUNCTIONS
 // ============================================
 
-// Database helpers
 async function getTableCount(tableName) {
     try {
         const { count, error } = await client
             .from(tableName)
             .select('*', { count: 'exact', head: true });
         
-        if (error) throw error;
-        return count;
+        if (error) {
+            if (error.code === '42P01') return 0;
+            throw error;
+        }
+        return count || 0;
     } catch (error) {
         console.error(`Error counting ${tableName}:`, error);
         return 0;
     }
 }
 
-// Render recent applications
 function renderRecentApplications(applications) {
     if (!applications?.length) {
-        return `
-            <div class="empty-state">
-                <i class="fa-solid fa-inbox"></i>
-                <p>No recent applications</p>
-            </div>
-        `;
+        return `<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No recent applications</p></div>`;
     }
 
     return `
@@ -1105,15 +1150,9 @@ function renderRecentApplications(applications) {
     `;
 }
 
-// Render recent customers
 function renderRecentCustomers(customers) {
     if (!customers?.length) {
-        return `
-            <div class="empty-state">
-                <i class="fa-solid fa-inbox"></i>
-                <p>No recent customers</p>
-            </div>
-        `;
+        return `<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No recent users</p></div>`;
     }
 
     return `
@@ -1134,7 +1173,6 @@ function renderRecentCustomers(customers) {
     `;
 }
 
-// Time ago function
 function timeAgo(date) {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
     const intervals = {
@@ -1155,7 +1193,6 @@ function timeAgo(date) {
     return 'Just now';
 }
 
-// UI helpers
 function showLoading() {
     isLoading = true;
     const content = document.getElementById('content');
@@ -1185,11 +1222,9 @@ function showError(message) {
 }
 
 function showToast(message, type = 'success') {
-    // Remove existing toasts
     const existingToasts = document.querySelectorAll('.toast');
     existingToasts.forEach(toast => toast.remove());
 
-    // Create new toast
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icon = type === 'success' ? 'fa-check-circle' : 
@@ -1201,7 +1236,6 @@ function showToast(message, type = 'success') {
     `;
     document.body.appendChild(toast);
     
-    // Auto-remove after 3 seconds
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(20px)';
@@ -1328,7 +1362,7 @@ window.generateReport = async (type) => {
             case 'customers':
                 const { data: customers } = await client.from('profiles').select('*');
                 data = customers || [];
-                title = 'Customer Report';
+                title = 'User Report';
                 total = data.length;
                 break;
             case 'applications':
@@ -1390,7 +1424,6 @@ window.generateReport = async (type) => {
 
 window.downloadReport = (type) => {
     showToast(`Downloading ${type} report...`, 'info');
-    // Implement actual download logic here
     setTimeout(() => {
         showToast('Report downloaded!', 'success');
     }, 1000);
