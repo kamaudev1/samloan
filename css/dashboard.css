@@ -1,3 +1,84 @@
+.user-box{
+
+    text-align:center;
+
+    margin-bottom:35px;
+
+}
+
+.avatar{
+
+    width:80px;
+
+    height:80px;
+
+    margin:auto;
+
+    background:#2563EB;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:white;
+
+    font-size:32px;
+
+    margin-bottom:15px;
+
+}
+
+#role{
+
+    display:inline-block;
+
+    margin-top:10px;
+
+    padding:5px 12px;
+
+    border-radius:20px;
+
+    background:#10B981;
+
+    color:white;
+
+    font-size:13px;
+
+    font-weight:bold;
+
+}
+
+aside ul li{
+
+    margin:18px 0;
+
+}
+
+aside ul li a{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:12px;
+
+    border-radius:10px;
+
+    transition:.3s;
+
+}
+
+aside ul li a:hover{
+
+    background:rgba(255,255,255,.12);
+
+}
 *{
     margin:0;
     padding:0;
