@@ -65,7 +65,7 @@ form.addEventListener("submit", async (e) => {
 
     if (profile.role === "admin") {
 
-        window.location.href = "admin/dashboard.html";
+        window.location.href = "dashboard.html";
 
     } else {
 
