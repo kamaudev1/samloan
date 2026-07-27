@@ -1,0 +1,411 @@
+/* ===========================
+   SAM LOAN APP
+=========================== */
+
+:root{
+    --primary:#2563EB;
+    --secondary:#1E40AF;
+    --accent:#10B981;
+    --dark:#1F2937;
+    --light:#F8FAFC;
+    --white:#ffffff;
+    --gray:#6B7280;
+    --shadow:0 10px 30px rgba(0,0,0,.08);
+    --radius:16px;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:var(--light);
+    color:var(--dark);
+    line-height:1.6;
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+img{
+    max-width:100%;
+}
+
+section{
+    padding:90px 8%;
+}
+
+/* ===========================
+   NAVBAR
+=========================== */
+
+header{
+    position:sticky;
+    top:0;
+    width:100%;
+    background:#fff;
+    z-index:1000;
+    box-shadow:0 2px 15px rgba(0,0,0,.05);
+}
+
+.navbar{
+    height:75px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 8%;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:1.4rem;
+    font-weight:700;
+    color:var(--primary);
+}
+
+.logo i{
+    font-size:30px;
+}
+
+.nav-links{
+    list-style:none;
+    display:flex;
+    gap:30px;
+}
+
+.nav-links a{
+    font-weight:500;
+    transition:.3s;
+}
+
+.nav-links a:hover{
+    color:var(--primary);
+}
+
+.nav-buttons{
+    display:flex;
+    gap:15px;
+}
+
+.btn-primary,
+.btn-outline{
+    padding:12px 24px;
+    border-radius:10px;
+    transition:.3s;
+    font-weight:600;
+}
+
+.btn-primary{
+    background:var(--primary);
+    color:#fff;
+}
+
+.btn-primary:hover{
+    background:var(--secondary);
+    transform:translateY(-2px);
+}
+
+.btn-outline{
+    border:2px solid var(--primary);
+    color:var(--primary);
+}
+
+.btn-outline:hover{
+    background:var(--primary);
+    color:#fff;
+}
+
+.menu-toggle{
+    display:none;
+    font-size:28px;
+    cursor:pointer;
+}
+
+/* ===========================
+   HERO
+=========================== */
+
+.hero{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    align-items:center;
+    gap:60px;
+    min-height:90vh;
+}
+
+.badge{
+    display:inline-block;
+    background:#DBEAFE;
+    color:var(--primary);
+    padding:8px 18px;
+    border-radius:50px;
+    font-weight:600;
+    margin-bottom:20px;
+}
+
+.hero h1{
+    font-size:3.2rem;
+    margin-bottom:20px;
+    line-height:1.2;
+}
+
+.hero p{
+    color:var(--gray);
+    margin-bottom:35px;
+    max-width:520px;
+}
+
+.hero-buttons{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.hero-image{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.hero-image i{
+    font-size:240px;
+    color:var(--primary);
+    animation:float 3s ease-in-out infinite;
+}
+
+@keyframes float{
+
+0%{
+transform:translateY(0);
+}
+
+50%{
+transform:translateY(-15px);
+}
+
+100%{
+transform:translateY(0);
+}
+
+}
+
+/* ===========================
+FEATURES
+=========================== */
+
+.features{
+    text-align:center;
+}
+
+.features h2{
+    margin-bottom:50px;
+    font-size:2.3rem;
+}
+
+.feature-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:30px;
+}
+
+.card{
+    background:#fff;
+    padding:35px;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    transition:.3s;
+}
+
+.card:hover{
+    transform:translateY(-8px);
+}
+
+.card i{
+    font-size:40px;
+    color:var(--primary);
+    margin-bottom:20px;
+}
+
+.card h3{
+    margin-bottom:15px;
+}
+
+/* ===========================
+STEPS
+=========================== */
+
+.steps{
+    background:#EEF4FF;
+    text-align:center;
+}
+
+.steps h2{
+    margin-bottom:50px;
+}
+
+.steps-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:30px;
+}
+
+.steps-grid div{
+    background:#fff;
+    padding:30px;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+}
+
+.steps span{
+    width:70px;
+    height:70px;
+    background:var(--primary);
+    color:#fff;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:1.5rem;
+    margin:auto auto 20px;
+}
+
+/* ===========================
+CALCULATOR
+=========================== */
+
+.calculator{
+    text-align:center;
+}
+
+.calculator-box{
+    max-width:600px;
+    margin:auto;
+    background:#fff;
+    padding:40px;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+}
+
+.calculator-box input{
+    width:100%;
+    padding:15px;
+    margin-bottom:18px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    font-size:15px;
+}
+
+.calculator-box button{
+    width:100%;
+    padding:15px;
+    border:none;
+    background:var(--primary);
+    color:#fff;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.calculator-box h3{
+    margin-top:25px;
+}
+
+/* ===========================
+CTA
+=========================== */
+
+.cta{
+    text-align:center;
+    background:linear-gradient(135deg,var(--primary),var(--secondary));
+    color:#fff;
+}
+
+.cta h2{
+    font-size:2.5rem;
+}
+
+.cta p{
+    margin:20px 0 30px;
+}
+
+.cta .btn-primary{
+    background:#fff;
+    color:var(--primary);
+}
+
+/* ===========================
+FOOTER
+=========================== */
+
+footer{
+    background:#111827;
+    color:#D1D5DB;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:40px;
+    padding:60px 8%;
+}
+
+footer h3,
+footer h4{
+    color:#fff;
+    margin-bottom:15px;
+}
+
+footer a{
+    display:block;
+    margin-bottom:10px;
+}
+
+footer a:hover{
+    color:#fff;
+}
+
+/* ===========================
+RESPONSIVE
+=========================== */
+
+@media(max-width:900px){
+
+.nav-links,
+.nav-buttons{
+display:none;
+}
+
+.menu-toggle{
+display:block;
+}
+
+.hero{
+grid-template-columns:1fr;
+text-align:center;
+}
+
+.hero p{
+margin:auto auto 35px;
+}
+
+.hero-buttons{
+justify-content:center;
+}
+
+.hero-image i{
+font-size:170px;
+}
+
+.hero h1{
+font-size:2.3rem;
+}
+
+}
