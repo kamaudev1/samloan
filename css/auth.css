@@ -1,4 +1,9 @@
-/* ===== RESET & BASE ===== */
+/* ============================================================
+   AUTH · ONE-OF-A-KIND DESIGN
+   Shared by login.html & register.html
+   ============================================================ */
+
+/* ----- RESET & BASE ----- */
 * {
     margin: 0;
     padding: 0;
@@ -16,7 +21,7 @@ body {
     position: relative;
 }
 
-/* ===== ANIMATED BACKGROUND · ORB MESH ===== */
+/* ----- ANIMATED BACKGROUND · ORB MESH ----- */
 .bg-orb {
     position: fixed;
     border-radius: 50%;
@@ -58,13 +63,21 @@ body {
 }
 
 @keyframes orbFloat {
-    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-    33% { transform: translate(60px, -40px) scale(1.1) rotate(6deg); }
-    66% { transform: translate(-30px, 50px) scale(0.9) rotate(-4deg); }
-    100% { transform: translate(40px, -20px) scale(1.05) rotate(2deg); }
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        transform: translate(60px, -40px) scale(1.1) rotate(6deg);
+    }
+    66% {
+        transform: translate(-30px, 50px) scale(0.9) rotate(-4deg);
+    }
+    100% {
+        transform: translate(40px, -20px) scale(1.05) rotate(2deg);
+    }
 }
 
-/* ===== GRID OVERLAY ===== */
+/* ----- SUBTLE GRID OVERLAY ----- */
 .bg-grid {
     position: fixed;
     inset: 0;
@@ -76,16 +89,16 @@ body {
     pointer-events: none;
 }
 
-/* ===== AUTH CONTAINER ===== */
+/* ----- AUTH CONTAINER ----- */
 .auth-container {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 460px;
+    max-width: 480px;
     padding: 20px;
 }
 
-/* ===== AUTH CARD · GLASSMORPHISM ===== */
+/* ----- AUTH CARD · GLASSMORPHISM ----- */
 .auth-card {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(24px) saturate(1.4);
@@ -96,12 +109,12 @@ body {
     box-shadow:
         0 30px 80px rgba(0, 0, 0, 0.6),
         inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    transition: box-shadow 0.4s ease;
     position: relative;
     overflow: hidden;
+    transition: box-shadow 0.4s ease;
 }
 
-/* animated border */
+/* animated gradient border */
 .auth-card::before {
     content: '';
     position: absolute;
@@ -123,10 +136,12 @@ body {
 }
 
 @keyframes borderSpin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-/* ===== CARD HEADER ===== */
+/* ----- CARD HEADER ----- */
 .auth-card h2 {
     font-size: 28px;
     font-weight: 700;
@@ -138,14 +153,16 @@ body {
     gap: 10px;
 }
 
-.auth-card h2 span {
+.auth-card h2::before {
+    content: '✦';
     background: linear-gradient(135deg, #a78bfa, #ec4899);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-size: 30px;
 }
 
-.auth-card .subtitle {
+.auth-card p {
     color: rgba(255, 255, 255, 0.5);
     font-size: 15px;
     margin-bottom: 28px;
@@ -153,25 +170,15 @@ body {
     letter-spacing: 0.01em;
 }
 
-.auth-card .subtitle i {
-    margin-right: 6px;
-    opacity: 0.6;
-}
-
-/* ===== FORM ===== */
+/* ----- FORM ----- */
 form {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
-/* ---- floating label wrapper ---- */
-.field-group {
-    position: relative;
-    margin-bottom: 10px;
-}
-
-.field-group input {
+/* ----- INPUTS (standard) ----- */
+input:not([type="checkbox"]) {
     width: 100%;
     padding: 18px 18px 10px 18px;
     background: rgba(255, 255, 255, 0.04);
@@ -183,92 +190,33 @@ form {
     outline: none;
     font-family: inherit;
     height: 64px;
+    margin-bottom: 10px;
 }
 
-.field-group input:focus {
+input:not([type="checkbox"]):focus {
     border-color: rgba(167, 139, 250, 0.6);
     background: rgba(255, 255, 255, 0.07);
     box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.08), inset 0 0 0 1px rgba(167, 139, 250, 0.1);
 }
 
-.field-group input::placeholder {
-    color: transparent;
+input:not([type="checkbox"])::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+    font-weight: 300;
+    letter-spacing: 0.3px;
 }
 
-.field-group label {
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 15px;
-    pointer-events: none;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    font-weight: 400;
-    transform-origin: left center;
-}
-
-.field-group input:focus ~ label,
-.field-group input:not(:placeholder-shown) ~ label {
-    top: 12px;
-    transform: translateY(0) scale(0.8);
-    color: rgba(167, 139, 250, 0.7);
-    font-weight: 500;
-}
-
-/* ===== PASSWORD WRAPPER ===== */
+/* ----- PASSWORD WRAPPER ----- */
 .password-wrapper {
     position: relative;
     margin-bottom: 10px;
 }
 
 .password-wrapper input {
-    width: 100%;
-    padding: 18px 52px 10px 18px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    font-size: 16px;
-    color: #fff;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-    outline: none;
-    font-family: inherit;
-    height: 64px;
+    padding-right: 52px;
+    margin-bottom: 0;
 }
 
-.password-wrapper input:focus {
-    border-color: rgba(167, 139, 250, 0.6);
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.08), inset 0 0 0 1px rgba(167, 139, 250, 0.1);
-}
-
-.password-wrapper input::placeholder {
-    color: transparent;
-}
-
-.password-wrapper label {
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 15px;
-    pointer-events: none;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    font-weight: 400;
-    transform-origin: left center;
-}
-
-.password-wrapper input:focus ~ label,
-.password-wrapper input:not(:placeholder-shown) ~ label {
-    top: 12px;
-    transform: translateY(0) scale(0.8);
-    color: rgba(167, 139, 250, 0.7);
-    font-weight: 500;
-}
-
-/* ---- toggle icon ---- */
-.password-wrapper .toggle-icon {
+.password-wrapper i {
     position: absolute;
     right: 18px;
     top: 50%;
@@ -286,26 +234,18 @@ form {
     background: rgba(255, 255, 255, 0.02);
 }
 
-.password-wrapper .toggle-icon:hover {
+.password-wrapper i:hover {
     color: rgba(167, 139, 250, 0.7);
     background: rgba(255, 255, 255, 0.05);
     transform: translateY(-50%) scale(1.05);
 }
 
-.password-wrapper .toggle-icon i {
-    transition: transform 0.3s ease;
-}
-
-.password-wrapper .toggle-icon.active i {
-    transform: scale(0.85);
-}
-
-/* ===== TERMS ===== */
+/* ----- TERMS CHECKBOX (custom) ----- */
 .terms {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 8px 0 22px;
+    margin: 6px 0 22px;
     font-size: 14px;
     color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
@@ -331,19 +271,18 @@ form {
     color: transparent;
 }
 
-.terms input:checked + .checkmark {
+.terms input:checked+.checkmark {
     background: linear-gradient(135deg, #7c3aed, #4f46e5);
     border-color: #7c3aed;
     color: #fff;
     box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
 }
 
-.terms input:checked + .checkmark i {
+.terms input:checked+.checkmark::after {
+    content: '✓';
     color: #fff;
-}
-
-.terms .checkmark i {
-    transition: color 0.2s;
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .terms .label-text {
@@ -366,8 +305,8 @@ form {
     text-decoration: underline;
 }
 
-/* ===== BUTTON ===== */
-.btn-primary {
+/* ----- BUTTON ----- */
+button[type="submit"] {
     width: 100%;
     padding: 16px;
     border: none;
@@ -386,17 +325,17 @@ form {
     font-family: inherit;
 }
 
-.btn-primary:hover {
+button[type="submit"]:hover {
     transform: translateY(-2px) scale(1.01);
     box-shadow: 0 12px 40px rgba(124, 58, 237, 0.35);
 }
 
-.btn-primary:active {
+button[type="submit"]:active {
     transform: scale(0.97);
 }
 
 /* shimmer overlay */
-.btn-primary::after {
+button[type="submit"]::after {
     content: '';
     position: absolute;
     top: -50%;
@@ -411,11 +350,20 @@ form {
     transition: left 0.7s ease;
 }
 
-.btn-primary:hover::after {
+button[type="submit"]:hover::after {
     left: 60%;
 }
 
-/* ===== LINKS ===== */
+/* ----- MESSAGE ----- */
+#message {
+    margin-top: 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    min-height: 22px;
+}
+
+/* ----- LINKS (login page) ----- */
 .links {
     display: flex;
     justify-content: space-between;
@@ -451,21 +399,12 @@ form {
     width: 100%;
 }
 
-.links a i {
-    margin-right: 6px;
-    opacity: 0.5;
-    font-size: 13px;
-}
-
-/* ===== BOTTOM ===== */
+/* ----- BOTTOM (register page) ----- */
 .bottom {
     text-align: center;
     margin-top: 28px;
     padding-top: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.bottom p {
     color: rgba(255, 255, 255, 0.3);
     font-size: 14px;
 }
@@ -482,16 +421,34 @@ form {
     text-decoration: underline;
 }
 
-/* ===== SHAKE ANIMATION (for form feedback) ===== */
+/* ----- SHAKE ANIMATION (for feedback) ----- */
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-12px); }
-    40% { transform: translateX(12px); }
-    60% { transform: translateX(-8px); }
-    80% { transform: translateX(8px); }
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    20% {
+        transform: translateX(-12px);
+    }
+    40% {
+        transform: translateX(12px);
+    }
+    60% {
+        transform: translateX(-8px);
+    }
+    80% {
+        transform: translateX(8px);
+    }
 }
 
-/* ===== RESPONSIVE ===== */
+.shake {
+    animation: shake 0.4s ease;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
 @media (max-width: 520px) {
     .auth-card {
         padding: 32px 24px 28px;
@@ -502,15 +459,14 @@ form {
         font-size: 24px;
     }
 
-    .field-group input,
-    .password-wrapper input {
+    input:not([type="checkbox"]) {
         height: 58px;
         font-size: 15px;
         padding-top: 16px;
         padding-bottom: 8px;
     }
 
-    .btn-primary {
+    button[type="submit"] {
         padding: 15px;
         font-size: 15px;
     }
@@ -548,31 +504,30 @@ form {
     .auth-card h2 {
         font-size: 21px;
     }
-    .field-group input,
-    .password-wrapper input {
+
+    input:not([type="checkbox"]) {
         height: 52px;
         font-size: 14px;
         padding: 14px 14px 6px 14px;
     }
-    .field-group label,
-    .password-wrapper label {
-        font-size: 13px;
-        left: 14px;
-    }
-    .field-group input:focus ~ label,
-    .field-group input:not(:placeholder-shown) ~ label,
-    .password-wrapper input:focus ~ label,
-    .password-wrapper input:not(:placeholder-shown) ~ label {
-        top: 10px;
-        font-size: 11px;
-    }
-    .password-wrapper .toggle-icon {
+
+    .password-wrapper i {
         right: 14px;
         font-size: 16px;
     }
-    .btn-primary {
+
+    button[type="submit"] {
         padding: 13px;
         font-size: 14px;
         border-radius: 12px;
+    }
+
+    .terms {
+        font-size: 13px;
+        gap: 10px;
+    }
+    .terms .checkmark {
+        width: 20px;
+        height: 20px;
     }
 }
