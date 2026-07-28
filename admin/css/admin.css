@@ -89,6 +89,97 @@
     border-color: var(--primary);
     outline: none;
 }
+/* Customer Avatar */
+.customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+.customer-avatar:hover {
+    transform: scale(1.1);
+}
+
+/* Document Cards */
+.doc-card {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+.doc-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+}
+.doc-card h4 {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+/* Admin Modal Overlay */
+.admin-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Status Badge Colors */
+.status-badge.disbursed {
+    background: rgba(79, 70, 229, 0.15);
+    color: var(--primary-light);
+}
+
+/* Form Group in Modal */
+#disburseForm .form-group,
+#recordPaymentForm .form-group {
+    margin-bottom: 12px;
+}
+#disburseForm .form-group label,
+#recordPaymentForm .form-group label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+#disburseForm .form-group input,
+#disburseForm .form-group select,
+#recordPaymentForm .form-group input,
+#recordPaymentForm .form-group select,
+#recordPaymentForm .form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+#disburseForm .form-group input:focus,
+#recordPaymentForm .form-group input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
 
 /* ============================================
    CUSTOMER DETAILS & FORMS
