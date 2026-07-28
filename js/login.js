@@ -1,22 +1,76 @@
-<!-- Email input -->
-<input type="email" id="loginEmail" placeholder=" " required>
+const form = document.getElementById("loginForm");
 
-<!-- Password input -->
-<input type="password" id="loginPassword" placeholder=" " required>
+const message = document.getElementById("message");
 
-<!-- Remember me checkbox -->
-<input type="checkbox" id="rememberMe">
+const toggle = document.getElementById("togglePassword");
 
-<!-- Login button -->
-<button type="submit" class="btn btn-primary btn-full" id="loginBtn">
-    <span class="btn-content">
-        <span class="btn-text">Sign In</span>
-        <i class="fas fa-arrow-right btn-icon"></i>
-    </span>
-    <span class="btn-loading" style="display:none;">
-        <i class="fas fa-spinner fa-spin"></i> Signing in...
-    </span>
-</button>
+const password = document.getElementById("password");
 
-<!-- Toast -->
-<div id="toast" class="toast"></div>
+// Show / Hide Password
+toggle.addEventListener("click", () => {
+
+    if (password.type === "password") {
+
+        password.type = "text";
+
+        toggle.classList.replace("fa-eye", "fa-eye-slash");
+
+    } else {
+
+        password.type = "password";
+
+        toggle.classList.replace("fa-eye-slash", "fa-eye");
+
+    }
+
+});
+
+// Login
+form.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    message.style.color = "#2563EB";
+    message.textContent = "Signing in...";
+
+    const email = document.getElementById("email").value.trim();
+
+    const pass = password.value;
+
+    const { data, error } =
+        await client.auth.signInWithPassword({
+
+            email,
+
+            password: pass
+
+        });
+
+    if (error) {
+
+        message.style.color = "red";
+
+        message.textContent = error.message;
+
+        return;
+
+    }
+
+    // Read profile
+    const { data: profile } = await client
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+    if (profile.role === "admin") {
+
+        window.location.href = "dashboard.html";
+
+    } else {
+
+        window.location.href = "dashboard.html";
+
+    }
+
+});
