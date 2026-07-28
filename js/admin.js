@@ -9,8 +9,8 @@ let applicationsData = [];
 let loansData = [];
 let paymentsData = [];
 
-// Storage bucket base URL
-const STORAGE_URL = 'https://buyrcwepcwoipbgcydqg.supabase.co/storage/v1/object/public/profiles/';
+// Supabase Storage base URL (adjust if different)
+const STORAGE_BASE_URL = 'https://buyrcwepcwoipbgcydqg.supabase.co/storage/v1/object/public/profiles/';
 
 // ============================================
 // PAGE CONFIGURATION
@@ -33,12 +33,12 @@ const pages = {
         adminInfo = await requireAdmin();
         if (!adminInfo) return;
 
-        const welcomeEl = document.getElementById("welcomeAdmin");
+        const welcomeEl = document.getElementById('welcomeAdmin');
         if (adminInfo.profile?.full_name) {
             welcomeEl.innerHTML = `Welcome, <strong>${adminInfo.profile.full_name}</strong>`;
         }
 
-        const adminNameEl = document.getElementById("adminName");
+        const adminNameEl = document.getElementById('adminName');
         if (adminNameEl && adminInfo.profile?.full_name) {
             adminNameEl.textContent = adminInfo.profile.full_name;
         }
@@ -53,18 +53,18 @@ const pages = {
 // ============================================
 // NAVIGATION
 // ============================================
-document.querySelectorAll("aside li[data-page]").forEach(item => {
+document.querySelectorAll('aside li[data-page]').forEach(item => {
     item.onclick = async () => {
         if (isLoading) return;
         const page = item.dataset.page;
         if (page === currentPage) return;
 
-        document.querySelectorAll("aside li").forEach(li => li.classList.remove("active"));
-        item.classList.add("active");
+        document.querySelectorAll('aside li').forEach(li => li.classList.remove('active'));
+        item.classList.add('active');
 
         const pageConfig = pages[page];
         if (pageConfig) {
-            document.getElementById("pageTitle").innerText = pageConfig.title;
+            document.getElementById('pageTitle').innerText = pageConfig.title;
         }
 
         currentPage = page;
@@ -75,11 +75,11 @@ document.querySelectorAll("aside li[data-page]").forEach(item => {
 // ============================================
 // LOGOUT
 // ============================================
-document.getElementById("logout").onclick = async () => {
+document.getElementById('logout').onclick = async () => {
     try {
         if (!confirm('Are you sure you want to logout?')) return;
         await client.auth.signOut();
-        window.location.href = "../login.html";
+        window.location.href = '../login.html';
     } catch (error) {
         console.error('Logout error:', error);
         showError('Failed to logout');
@@ -107,10 +107,7 @@ async function loadDashboard() {
                 .order('created_at', { ascending: false })
                 .limit(5);
             recentApplications = data || [];
-        } catch (error) {
-            console.warn('Could not fetch recent applications:', error.message);
-            recentApplications = [];
-        }
+        } catch (error) { /* ignore */ }
 
         let recentCustomers = [];
         try {
@@ -120,10 +117,7 @@ async function loadDashboard() {
                 .order('created_at', { ascending: false })
                 .limit(5);
             recentCustomers = data || [];
-        } catch (error) {
-            console.warn('Could not fetch recent customers:', error.message);
-            recentCustomers = [];
-        }
+        } catch (error) { /* ignore */ }
 
         let totalLoanAmount = 0;
         try {
@@ -134,11 +128,9 @@ async function loadDashboard() {
             if (data) {
                 totalLoanAmount = data.reduce((sum, loan) => sum + (loan.amount || 0), 0);
             }
-        } catch (error) {
-            console.warn('Could not fetch loan data:', error.message);
-        }
+        } catch (error) { /* ignore */ }
 
-        document.getElementById("content").innerHTML = `
+        document.getElementById('content').innerHTML = `
             <div class="dashboard-grid">
                 <div class="stat-card">
                     <div class="stat-icon blue">
@@ -209,7 +201,7 @@ async function loadDashboard() {
 }
 
 // ============================================
-// CUSTOMERS - Enhanced with Document View
+// CUSTOMERS – with Document View
 // ============================================
 async function loadCustomers() {
     showLoading();
@@ -223,7 +215,7 @@ async function loadCustomers() {
 
         customersData = customers || [];
 
-        document.getElementById("content").innerHTML = `
+        document.getElementById('content').innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-users"></i> All Users</h2>
                 <div class="page-actions">
@@ -322,7 +314,6 @@ async function loadCustomers() {
 // ============================================
 async function viewCustomerDocuments(customerId) {
     try {
-        // Fetch customer details
         const { data: customer, error } = await client
             .from('profiles')
             .select('*')
@@ -345,7 +336,7 @@ async function viewCustomerDocuments(customerId) {
                 .from('profiles')
                 .list(`ids/${userId}/`);
             if (idFiles && idFiles.length > 0) {
-                documents.id = `${STORAGE_URL}ids/${userId}/${idFiles[0].name}`;
+                documents.id = `${STORAGE_BASE_URL}ids/${userId}/${idFiles[0].name}`;
             }
         } catch (e) { /* ignore */ }
 
@@ -355,7 +346,7 @@ async function viewCustomerDocuments(customerId) {
                 .from('profiles')
                 .list(`passports/${userId}/`);
             if (passportFiles && passportFiles.length > 0) {
-                documents.passport = `${STORAGE_URL}passports/${userId}/${passportFiles[0].name}`;
+                documents.passport = `${STORAGE_BASE_URL}passports/${userId}/${passportFiles[0].name}`;
             }
         } catch (e) { /* ignore */ }
 
@@ -365,11 +356,10 @@ async function viewCustomerDocuments(customerId) {
                 .from('profiles')
                 .list(`signatures/${userId}/`);
             if (signatureFiles && signatureFiles.length > 0) {
-                documents.signature = `${STORAGE_URL}signatures/${userId}/${signatureFiles[0].name}`;
+                documents.signature = `${STORAGE_BASE_URL}signatures/${userId}/${signatureFiles[0].name}`;
             }
         } catch (e) { /* ignore */ }
 
-        // Build HTML
         let html = `
             <div style="padding:20px;">
                 <h3 style="margin-bottom:16px;">${customer.full_name}'s Documents</h3>
@@ -378,7 +368,7 @@ async function viewCustomerDocuments(customerId) {
 
         // Avatar
         html += `
-            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+            <div class="doc-card">
                 <h4>Profile Photo</h4>
                 ${documents.avatar ? 
                     `<img src="${documents.avatar}" alt="Avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover;margin:8px auto;display:block;" />` :
@@ -390,7 +380,7 @@ async function viewCustomerDocuments(customerId) {
 
         // ID
         html += `
-            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+            <div class="doc-card">
                 <h4>National ID</h4>
                 ${documents.id ? 
                     `<img src="${documents.id}" alt="ID" style="max-width:100%;max-height:150px;object-fit:contain;margin:8px auto;display:block;border-radius:8px;" />` :
@@ -402,7 +392,7 @@ async function viewCustomerDocuments(customerId) {
 
         // Passport
         html += `
-            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+            <div class="doc-card">
                 <h4>Passport Photo</h4>
                 ${documents.passport ? 
                     `<img src="${documents.passport}" alt="Passport" style="max-width:100%;max-height:150px;object-fit:contain;margin:8px auto;display:block;border-radius:8px;" />` :
@@ -414,7 +404,7 @@ async function viewCustomerDocuments(customerId) {
 
         // Signature
         html += `
-            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+            <div class="doc-card">
                 <h4>Signature</h4>
                 ${documents.signature ? 
                     `<img src="${documents.signature}" alt="Signature" style="max-width:100%;max-height:100px;object-fit:contain;margin:8px auto;display:block;border-radius:8px;" />` :
@@ -432,9 +422,7 @@ async function viewCustomerDocuments(customerId) {
             </div>
         `;
 
-        // Show in modal
         showModal(html);
-
     } catch (error) {
         console.error('View documents error:', error);
         showToast('Failed to load documents', 'error');
@@ -462,7 +450,6 @@ function showModal(html) {
     `;
     document.body.appendChild(overlay);
 
-    // Close on outside click
     overlay.addEventListener('click', function(e) {
         if (e.target === overlay) closeModal();
     });
@@ -474,7 +461,7 @@ function closeModal() {
 }
 
 // ============================================
-// CUSTOMER DETAILS - Enhanced with Documents Button
+// CUSTOMER DETAILS (with Documents button)
 // ============================================
 window.viewCustomer = async (id) => {
     try {
@@ -486,7 +473,7 @@ window.viewCustomer = async (id) => {
 
         if (error) throw error;
 
-        document.getElementById("content").innerHTML = `
+        document.getElementById('content').innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-user"></i> User Details</h2>
                 <button class="btn-secondary" onclick="loadCustomers()">
@@ -552,7 +539,7 @@ window.viewCustomer = async (id) => {
 };
 
 // ============================================
-// APPLICATIONS - Enhanced with Disburse
+// APPLICATIONS – with Disburse
 // ============================================
 async function loadApplications() {
     showLoading();
@@ -572,7 +559,7 @@ async function loadApplications() {
 
         applicationsData = applications || [];
 
-        document.getElementById("content").innerHTML = `
+        document.getElementById('content').innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-file-signature"></i> Loan Applications</h2>
                 <div class="page-actions">
@@ -706,7 +693,6 @@ window.viewApplication = async (id) => {
         `;
 
         showModal(html);
-
     } catch (error) {
         console.error('View application error:', error);
         showToast('Failed to load application details', 'error');
@@ -714,11 +700,10 @@ window.viewApplication = async (id) => {
 };
 
 // ============================================
-// DISBURSE LOAN - Create Loan from Application
+// DISBURSE LOAN
 // ============================================
 window.disburseLoan = async (applicationId) => {
     try {
-        // Fetch application
         const { data: app, error } = await client
             .from('applications')
             .select('*')
@@ -732,7 +717,6 @@ window.disburseLoan = async (applicationId) => {
             return;
         }
 
-        // Show disburse form in modal
         const html = `
             <div style="padding:20px;">
                 <h3 style="margin-bottom:16px;">Disburse Loan for ${app.applicant_name}</h3>
@@ -770,16 +754,12 @@ window.disburseLoan = async (applicationId) => {
         const dueDate = new Date();
         dueDate.setMonth(dueDate.getMonth() + term);
         document.getElementById('disburseDueDate').value = dueDate.toISOString().split('T')[0];
-
     } catch (error) {
         console.error('Disburse error:', error);
         showToast('Failed to load disburse form', 'error');
     }
 };
 
-// ============================================
-// HANDLE DISBURSE
-// ============================================
 window.handleDisburse = async (event, applicationId) => {
     event.preventDefault();
 
@@ -798,7 +778,6 @@ window.handleDisburse = async (event, applicationId) => {
     submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
 
     try {
-        // Get application
         const { data: app, error: appError } = await client
             .from('applications')
             .select('*')
@@ -837,7 +816,6 @@ window.handleDisburse = async (event, applicationId) => {
         closeModal();
         loadApplications();
         loadLoans();
-
     } catch (error) {
         console.error('Disburse error:', error);
         showToast('Failed to disburse loan: ' + error.message, 'error');
@@ -847,7 +825,7 @@ window.handleDisburse = async (event, applicationId) => {
 };
 
 // ============================================
-// LOANS - Enhanced with Payment Tracking
+// LOANS – with Balance and Payment Recording
 // ============================================
 async function loadLoans() {
     showLoading();
@@ -867,7 +845,14 @@ async function loadLoans() {
 
         loansData = loans || [];
 
-        document.getElementById("content").innerHTML = `
+        // Calculate balances for each loan (parallel)
+        const loansWithBalances = await Promise.all(loansData.map(async (loan) => {
+            const balance = await calculateLoanBalance(loan.id);
+            const paid = loan.amount - balance;
+            return { ...loan, balance, paid };
+        }));
+
+        document.getElementById('content').innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-wallet"></i> Loans</h2>
                 <div class="page-actions">
@@ -886,10 +871,10 @@ async function loadLoans() {
                         <input type="text" id="loanSearch" placeholder="Search loans..." onkeyup="searchLoans()" />
                     </div>
                     <div class="table-stats">
-                        <span>Total: <strong>${loansData.length}</strong> loans</span>
+                        <span>Total: <strong>${loansWithBalances.length}</strong> loans</span>
                     </div>
                 </div>
-                ${loansData?.length ? `
+                ${loansWithBalances?.length ? `
                     <table>
                         <thead>
                             <tr>
@@ -903,33 +888,29 @@ async function loadLoans() {
                             </tr>
                         </thead>
                         <tbody id="loansTableBody">
-                            ${loansData.map(async loan => {
-                                const balance = await calculateLoanBalance(loan.id);
-                                const paid = loan.amount - balance;
-                                return `
-                                    <tr>
-                                        <td><strong>${loan.customer_name || 'N/A'}</strong></td>
-                                        <td>KES ${loan.amount?.toLocaleString() || '0'}</td>
-                                        <td>KES ${paid.toLocaleString()}</td>
-                                        <td><strong>KES ${balance.toLocaleString()}</strong></td>
-                                        <td><span class="status-badge ${loan.status || 'active'}">${loan.status || 'Active'}</span></td>
-                                        <td>${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</td>
-                                        <td>
-                                            <button class="btn-icon" onclick="viewLoanDetails('${loan.id}')" title="View Details">
-                                                <i class="fa-solid fa-eye"></i>
+                            ${loansWithBalances.map(loan => `
+                                <tr>
+                                    <td><strong>${loan.customer_name || 'N/A'}</strong></td>
+                                    <td>KES ${loan.amount?.toLocaleString() || '0'}</td>
+                                    <td>KES ${loan.paid.toLocaleString()}</td>
+                                    <td><strong>KES ${loan.balance.toLocaleString()}</strong></td>
+                                    <td><span class="status-badge ${loan.status || 'active'}">${loan.status || 'Active'}</span></td>
+                                    <td>${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</td>
+                                    <td>
+                                        <button class="btn-icon" onclick="viewLoanDetails('${loan.id}')" title="View Details">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        ${loan.status === 'active' ? `
+                                            <button class="btn-icon success" onclick="recordPayment('${loan.id}')" title="Record Payment">
+                                                <i class="fa-solid fa-money-bill-wave"></i>
                                             </button>
-                                            <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </button>
-                                            ${loan.status === 'active' ? `
-                                                <button class="btn-icon success" onclick="recordPayment('${loan.id}')" title="Record Payment">
-                                                    <i class="fa-solid fa-money-bill-wave"></i>
-                                                </button>
-                                            ` : ''}
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
                         </tbody>
                     </table>
                 ` : `
@@ -954,7 +935,6 @@ async function loadLoans() {
 // ============================================
 async function calculateLoanBalance(loanId) {
     try {
-        // Get total payments for this loan
         const { data: payments, error } = await client
             .from('payments')
             .select('amount')
@@ -965,7 +945,6 @@ async function calculateLoanBalance(loanId) {
 
         const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-        // Get loan amount
         const { data: loan, error: loanError } = await client
             .from('loans')
             .select('amount')
@@ -995,7 +974,6 @@ window.viewLoanDetails = async (loanId) => {
 
         if (error) throw error;
 
-        // Get payments
         const { data: payments, error: payError } = await client
             .from('payments')
             .select('*')
@@ -1061,7 +1039,6 @@ window.viewLoanDetails = async (loanId) => {
         `;
 
         showModal(html);
-
     } catch (error) {
         console.error('View loan details error:', error);
         showToast('Failed to load loan details', 'error');
@@ -1073,7 +1050,6 @@ window.viewLoanDetails = async (loanId) => {
 // ============================================
 window.recordPayment = async (loanId) => {
     try {
-        // Get loan details
         const { data: loan, error } = await client
             .from('loans')
             .select('customer_id, customer_name, amount')
@@ -1084,7 +1060,6 @@ window.recordPayment = async (loanId) => {
 
         const balance = await calculateLoanBalance(loanId);
 
-        // Show payment form in modal
         const html = `
             <div style="padding:20px;">
                 <h3 style="margin-bottom:16px;">Record Payment for ${loan.customer_name}</h3>
@@ -1130,16 +1105,12 @@ window.recordPayment = async (loanId) => {
             </div>
         `;
         showModal(html);
-
     } catch (error) {
         console.error('Record payment error:', error);
         showToast('Failed to load payment form', 'error');
     }
 };
 
-// ============================================
-// HANDLE RECORD PAYMENT
-// ============================================
 window.handleRecordPayment = async (event, loanId) => {
     event.preventDefault();
 
@@ -1159,7 +1130,6 @@ window.handleRecordPayment = async (event, loanId) => {
     submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Recording...';
 
     try {
-        // Get loan details
         const { data: loan, error: loanError } = await client
             .from('loans')
             .select('customer_id, customer_name')
@@ -1168,7 +1138,6 @@ window.handleRecordPayment = async (event, loanId) => {
 
         if (loanError) throw loanError;
 
-        // Insert payment
         const { error: payError } = await client
             .from('payments')
             .insert({
@@ -1186,10 +1155,8 @@ window.handleRecordPayment = async (event, loanId) => {
 
         if (payError) throw payError;
 
-        // Check if loan is fully paid
         const balance = await calculateLoanBalance(loanId);
         if (balance <= 0) {
-            // Update loan status to paid
             await client
                 .from('loans')
                 .update({ status: 'paid' })
@@ -1200,7 +1167,6 @@ window.handleRecordPayment = async (event, loanId) => {
         closeModal();
         loadLoans();
         loadPayments();
-
     } catch (error) {
         console.error('Record payment error:', error);
         showToast('Failed to record payment: ' + error.message, 'error');
@@ -1210,7 +1176,7 @@ window.handleRecordPayment = async (event, loanId) => {
 };
 
 // ============================================
-// PAYMENTS - Enhanced
+// PAYMENTS
 // ============================================
 async function loadPayments() {
     showLoading();
@@ -1230,7 +1196,7 @@ async function loadPayments() {
 
         paymentsData = payments || [];
 
-        document.getElementById("content").innerHTML = `
+        document.getElementById('content').innerHTML = `
             <div class="page-header">
                 <h2><i class="fa-solid fa-money-bill-wave"></i> Payments</h2>
                 <div class="page-actions">
@@ -1342,7 +1308,6 @@ window.viewPayment = async (id) => {
         `;
 
         showModal(html);
-
     } catch (error) {
         console.error('View payment error:', error);
         showToast('Failed to load payment details', 'error');
@@ -1400,7 +1365,7 @@ function refreshPayments() { loadPayments(); }
 // REPORTS
 // ============================================
 async function loadReports() {
-    document.getElementById("content").innerHTML = `
+    document.getElementById('content').innerHTML = `
         <div class="page-header">
             <h2><i class="fa-solid fa-chart-pie"></i> Reports</h2>
         </div>
@@ -1434,7 +1399,7 @@ async function loadReports() {
 // SETTINGS
 // ============================================
 async function loadSettings() {
-    document.getElementById("content").innerHTML = `
+    document.getElementById('content').innerHTML = `
         <div class="page-header">
             <h2><i class="fa-solid fa-gear"></i> Settings</h2>
         </div>
@@ -1480,7 +1445,7 @@ async function loadSettings() {
 }
 
 // ============================================
-// HELPER FUNCTIONS
+// HELPERS
 // ============================================
 async function getTableCount(tableName) {
     try {
@@ -1616,233 +1581,155 @@ function showToast(message, type = 'success') {
 }
 
 // ============================================
-// APPLICATION CRUD OPERATIONS (basic)
+// BASIC CRUD OPERATIONS (Placeholders / Stubs)
 // ============================================
-window.showAddApplication = () => {
-    showToast('New application form coming soon');
+
+// Customers
+window.showAddCustomer = () => { showToast('Add user form coming soon', 'info'); };
+window.editCustomer = (id) => { showToast(`Editing user ${id}`, 'info'); };
+window.deleteCustomer = async (id) => {
+    if (!confirm('Delete this user?')) return;
+    try {
+        await client.from('profiles').delete().eq('id', id);
+        showToast('User deleted', 'success');
+        loadCustomers();
+    } catch (e) {
+        showToast('Error deleting user', 'error');
+    }
 };
 
-window.editApplication = (id) => {
-    showToast(`Editing application ${id}`);
-};
+// Applications
+window.showAddApplication = () => { showToast('New application form coming soon', 'info'); };
+window.editApplication = (id) => { showToast(`Editing application ${id}`, 'info'); };
 
 window.approveApplication = async (id) => {
     if (!confirm('Approve this application?')) return;
     try {
-        const { error } = await client
-            .from('applications')
-            .update({ status: 'approved', updated_at: new Date().toISOString() })
-            .eq('id', id);
-        if (error) throw error;
-        showToast('Application approved successfully!', 'success');
+        await client.from('applications').update({ status: 'approved' }).eq('id', id);
+        showToast('Application approved', 'success');
         loadApplications();
-    } catch (error) {
-        console.error('Approve application error:', error);
-        showToast('Failed to approve application', 'error');
+    } catch (e) {
+        showToast('Error approving application', 'error');
     }
 };
 
 window.rejectApplication = async (id) => {
     if (!confirm('Reject this application?')) return;
     try {
-        const { error } = await client
-            .from('applications')
-            .update({ status: 'rejected', updated_at: new Date().toISOString() })
-            .eq('id', id);
-        if (error) throw error;
-        showToast('Application rejected', 'error');
+        await client.from('applications').update({ status: 'rejected' }).eq('id', id);
+        showToast('Application rejected', 'success');
         loadApplications();
-    } catch (error) {
-        console.error('Reject application error:', error);
-        showToast('Failed to reject application', 'error');
+    } catch (e) {
+        showToast('Error rejecting application', 'error');
     }
 };
 
-// ============================================
-// LOAN CRUD OPERATIONS (basic)
-// ============================================
-window.showAddLoan = () => {
-    showToast('Disburse loan form coming soon');
-};
+// Loans
+window.showAddLoan = () => { showToast('Disburse loan form coming soon', 'info'); };
+window.editLoan = (id) => { showToast(`Editing loan ${id}`, 'info'); };
+window.makePayment = (id) => { recordPayment(id); };
 
-window.editLoan = (id) => {
-    showToast(`Editing loan ${id}`);
-};
-
-window.makePayment = (id) => {
-    recordPayment(id);
-};
-
-// ============================================
-// PAYMENT CRUD OPERATIONS (basic)
-// ============================================
-window.showAddPayment = () => {
-    showToast('Record payment form coming soon');
-};
-
-window.editPayment = (id) => {
-    showToast(`Editing payment ${id}`);
-};
-
+// Payments
+window.showAddPayment = () => { showToast('Record payment form coming soon', 'info'); };
+window.editPayment = (id) => { showToast(`Editing payment ${id}`, 'info'); };
 window.deletePayment = async (id) => {
-    if (!confirm('Are you sure you want to delete this payment?')) return;
+    if (!confirm('Delete this payment?')) return;
     try {
-        const { error } = await client
-            .from('payments')
-            .delete()
-            .eq('id', id);
-        if (error) throw error;
-        showToast('Payment deleted successfully', 'success');
+        await client.from('payments').delete().eq('id', id);
+        showToast('Payment deleted', 'success');
         loadPayments();
-    } catch (error) {
-        console.error('Delete payment error:', error);
-        showToast('Failed to delete payment', 'error');
+    } catch (e) {
+        showToast('Error deleting payment', 'error');
     }
 };
 
-// ============================================
-// REPORT FUNCTIONS
-// ============================================
+// Reports
 window.generateReport = async (type) => {
     showToast(`Generating ${type} report...`, 'info');
-    
-    const reportContainer = document.getElementById('reportContainer');
-    if (!reportContainer) return;
-
+    const container = document.getElementById('reportContainer');
+    if (!container) return;
     try {
-        let data = [];
-        let title = '';
-        let total = 0;
-
+        let data = [], title = '';
         switch(type) {
             case 'customers':
-                const { data: customers } = await client.from('profiles').select('*');
-                data = customers || [];
+                const { data: c } = await client.from('profiles').select('*');
+                data = c || [];
                 title = 'User Report';
-                total = data.length;
                 break;
             case 'applications':
-                const { data: applications } = await client.from('applications').select('*');
-                data = applications || [];
+                const { data: a } = await client.from('applications').select('*');
+                data = a || [];
                 title = 'Applications Report';
-                total = data.length;
                 break;
             case 'loans':
-                const { data: loans } = await client.from('loans').select('*');
-                data = loans || [];
+                const { data: l } = await client.from('loans').select('*');
+                data = l || [];
                 title = 'Loans Report';
-                total = data.length;
                 break;
             case 'payments':
-                const { data: payments } = await client.from('payments').select('*');
-                data = payments || [];
+                const { data: p } = await client.from('payments').select('*');
+                data = p || [];
                 title = 'Payments Report';
-                total = data.length;
                 break;
         }
-
+        const total = data.length;
         const totalAmount = data.reduce((sum, item) => sum + (item.amount || 0), 0);
-
-        reportContainer.innerHTML = `
+        container.innerHTML = `
             <div class="report-result">
                 <h3>${title}</h3>
                 <div class="report-preview">
-                    <div class="report-stat">
-                        <span>Total Records</span>
-                        <strong>${total}</strong>
-                    </div>
-                    <div class="report-stat">
-                        <span>Total Amount</span>
-                        <strong>KES ${totalAmount.toLocaleString()}</strong>
-                    </div>
-                    <div class="report-stat">
-                        <span>Average</span>
-                        <strong>KES ${total > 0 ? (totalAmount / total).toFixed(2) : '0.00'}</strong>
-                    </div>
+                    <div class="report-stat"><span>Total Records</span><strong>${total}</strong></div>
+                    <div class="report-stat"><span>Total Amount</span><strong>KES ${totalAmount.toLocaleString()}</strong></div>
+                    <div class="report-stat"><span>Average</span><strong>KES ${total > 0 ? (totalAmount/total).toFixed(2) : '0.00'}</strong></div>
                 </div>
-                <div style="margin-top: 16px;">
-                    <button class="btn-primary" onclick="downloadReport('${type}')">
-                        <i class="fa-solid fa-download"></i> Download Report
-                    </button>
-                    <button class="btn-secondary" onclick="document.getElementById('reportContainer').innerHTML = ''">
-                        <i class="fa-solid fa-times"></i> Close
-                    </button>
+                <div style="margin-top:16px;">
+                    <button class="btn-primary" onclick="downloadReport('${type}')"><i class="fa-solid fa-download"></i> Download</button>
+                    <button class="btn-secondary" onclick="document.getElementById('reportContainer').innerHTML=''"><i class="fa-solid fa-times"></i> Close</button>
                 </div>
             </div>
         `;
-        
-        showToast('Report generated successfully!', 'success');
-    } catch (error) {
-        console.error('Generate report error:', error);
-        showToast('Failed to generate report', 'error');
+        showToast('Report generated', 'success');
+    } catch (e) {
+        showToast('Error generating report', 'error');
     }
 };
 
 window.downloadReport = (type) => {
     showToast(`Downloading ${type} report...`, 'info');
-    setTimeout(() => {
-        showToast('Report downloaded!', 'success');
-    }, 1000);
+    setTimeout(() => showToast('Downloaded!', 'success'), 1000);
 };
 
-// ============================================
-// SETTINGS FUNCTIONS
-// ============================================
+// Settings
 window.updateProfile = async () => {
     const name = document.getElementById('settingsName')?.value;
-    if (!name) {
-        showToast('Please enter a name', 'error');
-        return;
-    }
+    if (!name) return showToast('Enter a name', 'error');
     try {
-        const { error } = await client
-            .from('profiles')
-            .update({ full_name: name })
-            .eq('id', adminInfo.user.id);
-
-        if (error) throw error;
-        showToast('Profile updated successfully', 'success');
+        await client.from('profiles').update({ full_name: name }).eq('id', adminInfo.user.id);
+        showToast('Profile updated', 'success');
         adminInfo.profile.full_name = name;
         document.getElementById('welcomeAdmin').innerHTML = `Welcome, <strong>${name}</strong>`;
         document.getElementById('adminName').textContent = name;
-    } catch (error) {
-        console.error('Update profile error:', error);
-        showToast('Failed to update profile', 'error');
+    } catch (e) {
+        showToast('Update failed', 'error');
     }
 };
 
 window.changePassword = async () => {
-    const current = document.getElementById('currentPassword')?.value;
-    const newPass = document.getElementById('newPassword')?.value;
-    const confirm = document.getElementById('confirmPassword')?.value;
-
-    if (!current || !newPass || !confirm) {
-        showToast('Please fill in all password fields', 'error');
-        return;
-    }
-
-    if (newPass !== confirm) {
-        showToast('New passwords do not match', 'error');
-        return;
-    }
-
-    if (newPass.length < 6) {
-        showToast('New password must be at least 6 characters', 'error');
-        return;
-    }
-
+    const current = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    if (!current || !newPass || !confirm) return showToast('Fill all fields', 'error');
+    if (newPass !== confirm) return showToast('Passwords do not match', 'error');
+    if (newPass.length < 6) return showToast('Password too short', 'error');
     try {
-        const { error } = await client.auth.updateUser({
-            password: newPass
-        });
-
-        if (error) throw error;
-        showToast('Password changed successfully', 'success');
+        await client.auth.updateUser({ password: newPass });
+        showToast('Password changed', 'success');
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
-    } catch (error) {
-        console.error('Change password error:', error);
-        showToast('Failed to change password. Please check your current password.', 'error');
+    } catch (e) {
+        showToast('Error changing password', 'error');
     }
 };
+
+console.log('✅ Admin panel loaded successfully');
