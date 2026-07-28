@@ -14,11 +14,13 @@ body {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: #0b0d15;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
+    padding: 40px 20px;
 }
 
 /* ----- ANIMATED BACKGROUND · ORB MESH ----- */
@@ -95,7 +97,7 @@ body {
     z-index: 1;
     width: 100%;
     max-width: 480px;
-    padding: 20px;
+    margin: 0 auto;
 }
 
 /* ----- AUTH CARD · GLASSMORPHISM ----- */
@@ -205,6 +207,12 @@ input:not([type="checkbox"])::placeholder {
     letter-spacing: 0.3px;
 }
 
+input:not([type="checkbox"]):-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px rgba(20, 20, 40, 0.8) inset !important;
+    -webkit-text-fill-color: #fff !important;
+    border-color: rgba(167, 139, 250, 0.3);
+}
+
 /* ----- PASSWORD WRAPPER ----- */
 .password-wrapper {
     position: relative;
@@ -271,14 +279,14 @@ input:not([type="checkbox"])::placeholder {
     color: transparent;
 }
 
-.terms input:checked+.checkmark {
+.terms input:checked + .checkmark {
     background: linear-gradient(135deg, #7c3aed, #4f46e5);
     border-color: #7c3aed;
     color: #fff;
     box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
 }
 
-.terms input:checked+.checkmark::after {
+.terms input:checked + .checkmark::after {
     content: '✓';
     color: #fff;
     font-size: 14px;
@@ -423,22 +431,11 @@ button[type="submit"]:hover::after {
 
 /* ----- SHAKE ANIMATION (for feedback) ----- */
 @keyframes shake {
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-    20% {
-        transform: translateX(-12px);
-    }
-    40% {
-        transform: translateX(12px);
-    }
-    60% {
-        transform: translateX(-8px);
-    }
-    80% {
-        transform: translateX(8px);
-    }
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-12px); }
+    40% { transform: translateX(12px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
 }
 
 .shake {
