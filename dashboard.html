@@ -12,6 +12,9 @@
 
 <header>
     <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+        </button>
         <div class="logo">
             <div class="logo-icon">
                 <i class="fa-solid fa-building-columns"></i>
@@ -23,12 +26,68 @@
         </div>
     </div>
     <div class="header-right">
-        <div class="notification-btn">
-            <i class="fa-solid fa-bell"></i>
-            <span class="badge">3</span>
+        <!-- Notification Bell -->
+        <div class="notification-wrapper">
+            <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
+                <i class="fa-solid fa-bell"></i>
+                <span class="badge" id="notificationBadge">3</span>
+            </button>
+            <!-- Notification Dropdown -->
+            <div class="notification-dropdown" id="notificationDropdown">
+                <div class="notification-header">
+                    <h4>Notifications</h4>
+                    <button class="mark-all-read" id="markAllRead">Mark all read</button>
+                </div>
+                <div class="notification-list" id="notificationList">
+                    <div class="notification-item unread">
+                        <div class="notif-icon loan">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                        <div class="notif-content">
+                            <p class="notif-text">Your loan application has been approved!</p>
+                            <span class="notif-time">2 hours ago</span>
+                        </div>
+                        <span class="notif-dot"></span>
+                    </div>
+                    <div class="notification-item unread">
+                        <div class="notif-icon payment">
+                            <i class="fa-solid fa-money-bill-transfer"></i>
+                        </div>
+                        <div class="notif-content">
+                            <p class="notif-text">Payment of KES 5,000 received successfully</p>
+                            <span class="notif-time">5 hours ago</span>
+                        </div>
+                        <span class="notif-dot"></span>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notif-icon status">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="notif-content">
+                            <p class="notif-text">Welcome to Sam Loans! Start your journey today.</p>
+                            <span class="notif-time">2 days ago</span>
+                        </div>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notif-icon alert">
+                            <i class="fa-solid fa-bell"></i>
+                        </div>
+                        <div class="notif-content">
+                            <p class="notif-text">Your next payment is due in 3 days</p>
+                            <span class="notif-time">3 days ago</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="notification-footer">
+                    <a href="#">View all notifications</a>
+                </div>
+            </div>
         </div>
-        <div class="header-user">
+
+        <!-- User Profile -->
+        <div class="header-user" id="headerUser">
             <div class="user-avatar" id="userAvatar">
+                <img id="userAvatarImg" src="" alt="Profile" style="display:none;">
                 <span id="userInitial">S</span>
             </div>
             <div class="user-info">
@@ -36,6 +95,7 @@
                 <span id="headerUserRole">Customer</span>
             </div>
         </div>
+
         <button id="logout" class="logout-btn">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>Logout</span>
@@ -44,10 +104,12 @@
 </header>
 
 <div class="container">
-    <aside>
+    <!-- Sidebar -->
+    <aside id="sidebar">
         <div class="sidebar-top">
             <div class="user-box">
-                <div class="avatar">
+                <div class="avatar" id="sidebarAvatar">
+                    <img id="sidebarAvatarImg" src="" alt="Profile" style="display:none;">
                     <span id="sidebarInitial">S</span>
                 </div>
                 <h3 id="welcome">Welcome</h3>
@@ -110,6 +172,7 @@
         </div>
     </aside>
 
+    <!-- Main Content -->
     <main>
         <div class="main-header">
             <div class="page-title">
@@ -123,6 +186,7 @@
             </div>
         </div>
 
+        <!-- Stats -->
         <div class="quick-stats">
             <div class="stat-card stat-card-primary">
                 <div class="stat-icon">
@@ -174,7 +238,9 @@
             </div>
         </div>
 
+        <!-- Grid -->
         <div class="dashboard-grid">
+            <!-- Chart -->
             <div class="dashboard-card chart-card">
                 <div class="card-header">
                     <div>
@@ -246,6 +312,7 @@
                 </div>
             </div>
 
+            <!-- Recent Activity -->
             <div class="dashboard-card recent-activity-card">
                 <div class="card-header">
                     <div>
@@ -255,52 +322,14 @@
                     <a href="#" class="view-all">View All</a>
                 </div>
                 <div class="card-body">
-                    <div class="activity-list">
-                        <div class="activity-item">
-                            <div class="activity-icon loan">
-                                <i class="fa-solid fa-hand-holding-dollar"></i>
-                            </div>
-                            <div class="activity-content">
-                                <div class="activity-title">Loan Application</div>
-                                <div class="activity-desc">You applied for a loan</div>
-                            </div>
-                            <div class="activity-time">2 hours ago</div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-icon payment">
-                                <i class="fa-solid fa-money-bill-transfer"></i>
-                            </div>
-                            <div class="activity-content">
-                                <div class="activity-title">Payment Made</div>
-                                <div class="activity-desc">You made a payment of KES 5,000</div>
-                            </div>
-                            <div class="activity-time">5 hours ago</div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-icon status">
-                                <i class="fa-solid fa-circle-check"></i>
-                            </div>
-                            <div class="activity-content">
-                                <div class="activity-title">Application Approved</div>
-                                <div class="activity-desc">Your loan application was approved</div>
-                            </div>
-                            <div class="activity-time">2 days ago</div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-icon alert">
-                                <i class="fa-solid fa-bell"></i>
-                            </div>
-                            <div class="activity-content">
-                                <div class="activity-title">Payment Reminder</div>
-                                <div class="activity-desc">Your next payment is due soon</div>
-                            </div>
-                            <div class="activity-time">3 days ago</div>
-                        </div>
+                    <div class="activity-list" id="activityList">
+                        <!-- Dynamic content -->
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Quick Actions -->
         <div class="dashboard-card quick-actions-card">
             <div class="card-header">
                 <div>
@@ -351,6 +380,9 @@
         </div>
     </main>
 </div>
+
+<!-- Overlay for mobile sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/config.js"></script>
