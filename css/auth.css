@@ -1,4 +1,174 @@
 /* ============================================
+   REGISTRATION SPECIFIC STYLES
+   ============================================ */
+
+.register-container {
+    min-height: calc(100vh - 120px);
+}
+
+.register-card {
+    max-width: 480px;
+}
+
+/* Form Steps */
+.form-step {
+    display: none;
+    animation: slideUp 0.4s ease forwards;
+}
+
+.form-step.active {
+    display: block;
+}
+
+.step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.step-indicator.active .step-number {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.step-indicator.completed .step-number {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.step-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.step-indicator.active .step-text {
+    color: var(--text-primary);
+}
+
+/* Form Navigation */
+.form-navigation {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.form-navigation .btn {
+    flex: 1;
+}
+
+.form-navigation .btn-secondary {
+    flex: 0.5;
+}
+
+/* Password Strength */
+.password-strength {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.strength-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.strength-meter {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.strength-text {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Next Step Button */
+.next-step {
+    margin-top: 8px;
+}
+
+.next-step .btn-content {
+    justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .register-card {
+        max-width: 100%;
+    }
+    
+    .form-navigation {
+        flex-direction: column;
+    }
+    
+    .form-navigation .btn {
+        width: 100%;
+    }
+    
+    .form-navigation .btn-secondary {
+        flex: 1;
+        order: 2;
+    }
+    
+    .form-navigation .btn-primary {
+        order: 1;
+    }
+    
+    .step-indicator {
+        padding: 10px 14px;
+    }
+    
+    .step-number {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 400px) {
+    .step-text {
+        font-size: 12px;
+    }
+    
+    .step-indicator {
+        gap: 8px;
+    }
+}
+/* ============================================
    AUTHENTICATION STYLES - Modern Premium
    ============================================ */
 
