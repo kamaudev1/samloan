@@ -9,6 +9,9 @@ let applicationsData = [];
 let loansData = [];
 let paymentsData = [];
 
+// Storage bucket base URL
+const STORAGE_URL = 'https://buyrcwepcwoipbgcydqg.supabase.co/storage/v1/object/public/profiles/';
+
 // ============================================
 // PAGE CONFIGURATION
 // ============================================
@@ -89,7 +92,6 @@ document.getElementById("logout").onclick = async () => {
 async function loadDashboard() {
     showLoading();
     try {
-        // Get accurate counts
         const [customersCount, applicationsCount, loansCount, paymentsCount] = await Promise.all([
             getTableCount('profiles'),
             getTableCount('applications'),
@@ -97,7 +99,6 @@ async function loadDashboard() {
             getTableCount('payments')
         ]);
 
-        // Fetch recent applications
         let recentApplications = [];
         try {
             const { data } = await client
@@ -111,7 +112,6 @@ async function loadDashboard() {
             recentApplications = [];
         }
 
-        // Fetch recent customers
         let recentCustomers = [];
         try {
             const { data } = await client
@@ -125,7 +125,6 @@ async function loadDashboard() {
             recentCustomers = [];
         }
 
-        // Fetch loan data
         let totalLoanAmount = 0;
         try {
             const { data } = await client
@@ -192,11 +191,11 @@ async function loadDashboard() {
                 <div class="quick-stats">
                     <div class="quick-stat">
                         <span>Total Loan Amount</span>
-                        <strong>$${totalLoanAmount.toLocaleString()}</strong>
+                        <strong>KES ${totalLoanAmount.toLocaleString()}</strong>
                     </div>
                     <div class="quick-stat">
                         <span>Average Loan</span>
-                        <strong>$${loansCount > 0 ? (totalLoanAmount / loansCount).toFixed(2) : '0.00'}</strong>
+                        <strong>KES ${loansCount > 0 ? (totalLoanAmount / loansCount).toFixed(2) : '0.00'}</strong>
                     </div>
                 </div>
             ` : ''}
@@ -210,7 +209,7 @@ async function loadDashboard() {
 }
 
 // ============================================
-// CUSTOMERS - Fetch ALL users
+// CUSTOMERS - Enhanced with Document View
 // ============================================
 async function loadCustomers() {
     showLoading();
@@ -250,6 +249,7 @@ async function loadCustomers() {
                     <table>
                         <thead>
                             <tr>
+                                <th>Avatar</th>
                                 <th>Full Name</th>
                                 <th>Email</th>
                                 <th>Phone</th>
@@ -262,6 +262,14 @@ async function loadCustomers() {
                         <tbody id="customersTableBody">
                             ${customersData.map(customer => `
                                 <tr>
+                                    <td>
+                                        <div class="customer-avatar" onclick="viewCustomerDocuments('${customer.id}')" title="View Documents">
+                                            ${customer.avatar_url ? 
+                                                `<img src="${customer.avatar_url}" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer;" />` :
+                                                `<div class="avatar-placeholder" style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;">${customer.full_name?.charAt(0) || 'U'}</div>`
+                                            }
+                                        </div>
+                                    </td>
                                     <td><strong>${customer.full_name || 'N/A'}</strong></td>
                                     <td>${customer.email || 'N/A'}</td>
                                     <td>${customer.phone || 'N/A'}</td>
@@ -274,6 +282,9 @@ async function loadCustomers() {
                                         </button>
                                         <button class="btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
                                             <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <button class="btn-icon" onclick="viewCustomerDocuments('${customer.id}')" title="Documents">
+                                            <i class="fa-solid fa-file"></i>
                                         </button>
                                         ${customer.role !== 'admin' ? `
                                             <button class="btn-icon danger" onclick="deleteCustomer('${customer.id}')" title="Delete">
@@ -307,164 +318,163 @@ async function loadCustomers() {
 }
 
 // ============================================
-// CUSTOMER SEARCH
+// VIEW CUSTOMER DOCUMENTS
 // ============================================
-function searchCustomers() {
-    const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#customersTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+async function viewCustomerDocuments(customerId) {
+    try {
+        // Fetch customer details
+        const { data: customer, error } = await client
+            .from('profiles')
+            .select('*')
+            .eq('id', customerId)
+            .single();
+
+        if (error) throw error;
+
+        const userId = customerId;
+        const documents = {
+            avatar: customer.avatar_url || null,
+            id: null,
+            passport: null,
+            signature: null
+        };
+
+        // Check for ID document
+        try {
+            const { data: idFiles } = await client.storage
+                .from('profiles')
+                .list(`ids/${userId}/`);
+            if (idFiles && idFiles.length > 0) {
+                documents.id = `${STORAGE_URL}ids/${userId}/${idFiles[0].name}`;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Check for Passport
+        try {
+            const { data: passportFiles } = await client.storage
+                .from('profiles')
+                .list(`passports/${userId}/`);
+            if (passportFiles && passportFiles.length > 0) {
+                documents.passport = `${STORAGE_URL}passports/${userId}/${passportFiles[0].name}`;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Check for Signature
+        try {
+            const { data: signatureFiles } = await client.storage
+                .from('profiles')
+                .list(`signatures/${userId}/`);
+            if (signatureFiles && signatureFiles.length > 0) {
+                documents.signature = `${STORAGE_URL}signatures/${userId}/${signatureFiles[0].name}`;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Build HTML
+        let html = `
+            <div style="padding:20px;">
+                <h3 style="margin-bottom:16px;">${customer.full_name}'s Documents</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        `;
+
+        // Avatar
+        html += `
+            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+                <h4>Profile Photo</h4>
+                ${documents.avatar ? 
+                    `<img src="${documents.avatar}" alt="Avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover;margin:8px auto;display:block;" />` :
+                    `<div style="width:120px;height:120px;border-radius:50%;background:var(--bg-card);margin:8px auto;display:flex;align-items:center;justify-content:center;color:var(--text-muted);">No photo</div>`
+                }
+                ${documents.avatar ? `<button class="btn-secondary" onclick="window.open('${documents.avatar}','_blank')">View</button>` : ''}
+            </div>
+        `;
+
+        // ID
+        html += `
+            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+                <h4>National ID</h4>
+                ${documents.id ? 
+                    `<img src="${documents.id}" alt="ID" style="max-width:100%;max-height:150px;object-fit:contain;margin:8px auto;display:block;border-radius:8px;" />` :
+                    `<div style="padding:20px;color:var(--text-muted);">Not uploaded</div>`
+                }
+                ${documents.id ? `<button class="btn-secondary" onclick="window.open('${documents.id}','_blank')">View</button>` : ''}
+            </div>
+        `;
+
+        // Passport
+        html += `
+            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+                <h4>Passport Photo</h4>
+                ${documents.passport ? 
+                    `<img src="${documents.passport}" alt="Passport" style="max-width:100%;max-height:150px;object-fit:contain;margin:8px auto;display:block;border-radius:8px;" />` :
+                    `<div style="padding:20px;color:var(--text-muted);">Not uploaded</div>`
+                }
+                ${documents.passport ? `<button class="btn-secondary" onclick="window.open('${documents.passport}','_blank')">View</button>` : ''}
+            </div>
+        `;
+
+        // Signature
+        html += `
+            <div class="doc-card" style="background:var(--bg-primary);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border-color);">
+                <h4>Signature</h4>
+                ${documents.signature ? 
+                    `<img src="${documents.signature}" alt="Signature" style="max-width:100%;max-height:100px;object-fit:contain;margin:8px auto;display:block;border-radius:8px;" />` :
+                    `<div style="padding:20px;color:var(--text-muted);">Not uploaded</div>`
+                }
+                ${documents.signature ? `<button class="btn-secondary" onclick="window.open('${documents.signature}','_blank')">View</button>` : ''}
+            </div>
+        `;
+
+        html += `
+                </div>
+                <div style="margin-top:20px;text-align:center;">
+                    <button class="btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        `;
+
+        // Show in modal
+        showModal(html);
+
+    } catch (error) {
+        console.error('View documents error:', error);
+        showToast('Failed to load documents', 'error');
+    }
+}
+
+// ============================================
+// MODAL HELPERS
+// ============================================
+function showModal(html) {
+    const existing = document.querySelector('.admin-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-modal-overlay';
+    overlay.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+        display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;
+        animation:fadeIn 0.3s ease;
+    `;
+    overlay.innerHTML = `
+        <div style="background:var(--bg-card);border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;padding:0;border:1px solid var(--border-color);">
+            ${html}
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Close on outside click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeModal();
     });
 }
 
-function refreshCustomers() {
-    loadCustomers();
+function closeModal() {
+    const overlay = document.querySelector('.admin-modal-overlay');
+    if (overlay) overlay.remove();
 }
 
 // ============================================
-// ADD CUSTOMER
-// ============================================
-window.showAddCustomer = () => {
-    document.getElementById("content").innerHTML = `
-        <div class="page-header">
-            <h2><i class="fa-solid fa-user-plus"></i> Add New User</h2>
-            <button class="btn-secondary" onclick="loadCustomers()">
-                <i class="fa-solid fa-arrow-left"></i> Back to Users
-            </button>
-        </div>
-        <div class="form-container">
-            <form id="addCustomerForm" onsubmit="handleAddCustomer(event)">
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="fullName">Full Name *</label>
-                        <input type="text" id="fullName" required placeholder="Enter full name" />
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email *</label>
-                        <input type="email" id="email" required placeholder="Enter email address" />
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input type="tel" id="phone" placeholder="Enter phone number" />
-                    </div>
-                    <div class="form-group">
-                        <label for="nationalId">National ID</label>
-                        <input type="text" id="nationalId" placeholder="Enter national ID" />
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password *</label>
-                        <input type="password" id="password" required placeholder="Enter password (min 6 chars)" minlength="6" />
-                    </div>
-                    <div class="form-group">
-                        <label for="role">Role</label>
-                        <select id="role">
-                            <option value="customer">Customer</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="loadCustomers()">Cancel</button>
-                    <button type="submit" class="btn-primary">
-                        <i class="fa-solid fa-user-plus"></i> Create User
-                    </button>
-                </div>
-            </form>
-        </div>
-    `;
-};
-
-// ============================================
-// HANDLE ADD CUSTOMER
-// ============================================
-window.handleAddCustomer = async (event) => {
-    event.preventDefault();
-    
-    const fullName = document.getElementById('fullName').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const nationalId = document.getElementById('nationalId').value.trim();
-    const password = document.getElementById('password').value;
-    const role = document.getElementById('role').value;
-
-    if (!fullName || !email || !password) {
-        showToast('Please fill in all required fields', 'error');
-        return;
-    }
-
-    if (password.length < 6) {
-        showToast('Password must be at least 6 characters', 'error');
-        return;
-    }
-
-    try {
-        showToast('Creating user...', 'info');
-
-        // Check if user already exists
-        const { data: existingUser } = await client
-            .from('profiles')
-            .select('email')
-            .eq('email', email)
-            .maybeSingle();
-
-        if (existingUser) {
-            showToast('A user with this email already exists!', 'error');
-            return;
-        }
-
-        // Create auth user
-        const { data: authData, error: authError } = await client.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    role: role
-                }
-            }
-        });
-
-        if (authError) {
-            if (authError.message.includes('already registered')) {
-                showToast('This email is already registered. Please use a different email.', 'error');
-                return;
-            }
-            throw authError;
-        }
-
-        if (!authData.user) {
-            throw new Error('Failed to create user');
-        }
-
-        // Create profile
-        const { error: profileError } = await client
-            .from('profiles')
-            .insert({
-                id: authData.user.id,
-                full_name: fullName,
-                email: email,
-                phone: phone || null,
-                national_id: nationalId || null,
-                role: role
-            });
-
-        if (profileError) {
-            console.error('Profile creation error:', profileError);
-            throw new Error('Failed to create user profile. Please try again.');
-        }
-
-        showToast('User created successfully!', 'success');
-        setTimeout(() => loadCustomers(), 1500);
-
-    } catch (error) {
-        console.error('Add customer error:', error);
-        showToast(error.message || 'Failed to create user', 'error');
-    }
-};
-
-// ============================================
-// VIEW CUSTOMER
+// CUSTOMER DETAILS - Enhanced with Documents Button
 // ============================================
 window.viewCustomer = async (id) => {
     try {
@@ -487,11 +497,17 @@ window.viewCustomer = async (id) => {
                 <div class="detail-card">
                     <div class="detail-header">
                         <div class="detail-avatar">
-                            <i class="fa-solid fa-user-circle"></i>
+                            ${customer.avatar_url ? 
+                                `<img src="${customer.avatar_url}" alt="Avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;" />` :
+                                `<i class="fa-solid fa-user-circle"></i>`
+                            }
                         </div>
                         <div>
                             <h3>${customer.full_name}</h3>
                             <p class="detail-role"><span class="status-badge ${customer.role}">${customer.role}</span></p>
+                            <button class="btn-secondary" onclick="viewCustomerDocuments('${customer.id}')" style="margin-top:8px;">
+                                <i class="fa-solid fa-file"></i> View Documents
+                            </button>
                         </div>
                     </div>
                     <div class="detail-grid">
@@ -536,161 +552,7 @@ window.viewCustomer = async (id) => {
 };
 
 // ============================================
-// EDIT CUSTOMER
-// ============================================
-window.editCustomer = async (id) => {
-    try {
-        const { data: customer, error } = await client
-            .from('profiles')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error) throw error;
-
-        document.getElementById("content").innerHTML = `
-            <div class="page-header">
-                <h2><i class="fa-solid fa-user-pen"></i> Edit User</h2>
-                <button class="btn-secondary" onclick="loadCustomers()">
-                    <i class="fa-solid fa-arrow-left"></i> Back to Users
-                </button>
-            </div>
-            <div class="form-container">
-                <form id="editCustomerForm" onsubmit="handleEditCustomer(event, '${id}')">
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="editFullName">Full Name *</label>
-                            <input type="text" id="editFullName" required value="${customer.full_name || ''}" />
-                        </div>
-                        <div class="form-group">
-                            <label for="editEmail">Email *</label>
-                            <input type="email" id="editEmail" required value="${customer.email || ''}" />
-                        </div>
-                        <div class="form-group">
-                            <label for="editPhone">Phone</label>
-                            <input type="tel" id="editPhone" value="${customer.phone || ''}" />
-                        </div>
-                        <div class="form-group">
-                            <label for="editNationalId">National ID</label>
-                            <input type="text" id="editNationalId" value="${customer.national_id || ''}" />
-                        </div>
-                        <div class="form-group">
-                            <label for="editRole">Role</label>
-                            <select id="editRole">
-                                <option value="customer" ${customer.role === 'customer' ? 'selected' : ''}>Customer</option>
-                                <option value="admin" ${customer.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="loadCustomers()">Cancel</button>
-                        <button type="submit" class="btn-primary">
-                            <i class="fa-solid fa-save"></i> Update User
-                        </button>
-                    </div>
-                </form>
-            </div>
-        `;
-    } catch (error) {
-        console.error('Edit customer error:', error);
-        showToast('Failed to load user for editing', 'error');
-    }
-};
-
-// ============================================
-// HANDLE EDIT CUSTOMER
-// ============================================
-window.handleEditCustomer = async (event, id) => {
-    event.preventDefault();
-
-    const fullName = document.getElementById('editFullName').value.trim();
-    const email = document.getElementById('editEmail').value.trim();
-    const phone = document.getElementById('editPhone').value.trim();
-    const nationalId = document.getElementById('editNationalId').value.trim();
-    const role = document.getElementById('editRole').value;
-
-    if (!fullName || !email) {
-        showToast('Full Name and Email are required', 'error');
-        return;
-    }
-
-    try {
-        // Check if email is taken by another user
-        const { data: existingUser } = await client
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .neq('id', id)
-            .maybeSingle();
-
-        if (existingUser) {
-            showToast('Email is already taken by another user', 'error');
-            return;
-        }
-
-        const { error } = await client
-            .from('profiles')
-            .update({
-                full_name: fullName,
-                email: email,
-                phone: phone || null,
-                national_id: nationalId || null,
-                role: role,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        showToast('User updated successfully!', 'success');
-        setTimeout(() => loadCustomers(), 1500);
-    } catch (error) {
-        console.error('Update customer error:', error);
-        showToast('Failed to update user: ' + error.message, 'error');
-    }
-};
-
-// ============================================
-// DELETE CUSTOMER
-// ============================================
-window.deleteCustomer = async (id) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-        return;
-    }
-
-    try {
-        // Check if customer has active loans
-        const { data: loans, error: loansError } = await client
-            .from('loans')
-            .select('id')
-            .eq('customer_id', id)
-            .eq('status', 'active');
-
-        if (loansError) throw loansError;
-
-        if (loans && loans.length > 0) {
-            showToast('Cannot delete user with active loans', 'error');
-            return;
-        }
-
-        // Delete from profiles
-        const { error } = await client
-            .from('profiles')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        showToast('User deleted successfully!', 'success');
-        loadCustomers();
-    } catch (error) {
-        console.error('Delete customer error:', error);
-        showToast('Failed to delete user: ' + error.message, 'error');
-    }
-};
-
-// ============================================
-// APPLICATIONS
+// APPLICATIONS - Enhanced with Disburse
 // ============================================
 async function loadApplications() {
     showLoading();
@@ -738,6 +600,7 @@ async function loadApplications() {
                             <tr>
                                 <th>Applicant</th>
                                 <th>Amount</th>
+                                <th>Term</th>
                                 <th>Status</th>
                                 <th>Date</th>
                                 <th>Actions</th>
@@ -747,7 +610,8 @@ async function loadApplications() {
                             ${applicationsData.map(app => `
                                 <tr>
                                     <td><strong>${app.applicant_name || 'N/A'}</strong></td>
-                                    <td>$${app.amount?.toLocaleString() || '0'}</td>
+                                    <td>KES ${app.amount?.toLocaleString() || '0'}</td>
+                                    <td>${app.term_months || 0} months</td>
                                     <td><span class="status-badge ${app.status || 'pending'}">${app.status || 'Pending'}</span></td>
                                     <td>${app.created_at ? new Date(app.created_at).toLocaleDateString() : 'N/A'}</td>
                                     <td>
@@ -763,6 +627,11 @@ async function loadApplications() {
                                             </button>
                                             <button class="btn-icon danger" onclick="rejectApplication('${app.id}')" title="Reject">
                                                 <i class="fa-solid fa-times"></i>
+                                            </button>
+                                        ` : ''}
+                                        ${app.status === 'approved' ? `
+                                            <button class="btn-icon primary" onclick="disburseLoan('${app.id}')" title="Disburse Loan">
+                                                <i class="fa-solid fa-hand-holding-dollar"></i>
                                             </button>
                                         ` : ''}
                                     </td>
@@ -787,21 +656,198 @@ async function loadApplications() {
     }
 }
 
-function searchApplications() {
-    const searchTerm = document.getElementById('applicationSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#applicationsTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-}
+// ============================================
+// VIEW APPLICATION DETAILS
+// ============================================
+window.viewApplication = async (id) => {
+    try {
+        const { data: app, error } = await client
+            .from('applications')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-function refreshApplications() {
-    loadApplications();
-}
+        if (error) throw error;
+
+        // Get customer details
+        const { data: customer } = await client
+            .from('profiles')
+            .select('full_name, email, phone, national_id, address')
+            .eq('id', app.customer_id)
+            .single();
+
+        let html = `
+            <div style="padding:20px;">
+                <h3 style="margin-bottom:16px;">Application Details</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                    <div><strong>Applicant:</strong> ${app.applicant_name}</div>
+                    <div><strong>Email:</strong> ${app.email || 'N/A'}</div>
+                    <div><strong>Phone:</strong> ${app.phone || 'N/A'}</div>
+                    <div><strong>National ID:</strong> ${app.national_id || 'N/A'}</div>
+                    <div><strong>Address:</strong> ${app.address || 'N/A'}</div>
+                    <div><strong>Amount:</strong> KES ${app.amount?.toLocaleString()}</div>
+                    <div><strong>Purpose:</strong> ${app.purpose}</div>
+                    <div><strong>Term:</strong> ${app.term_months || 0} months</div>
+                    <div><strong>Status:</strong> <span class="status-badge ${app.status}">${app.status}</span></div>
+                    <div><strong>Applied:</strong> ${app.created_at ? new Date(app.created_at).toLocaleString() : 'N/A'}</div>
+                </div>
+                ${app.notes ? `<div><strong>Notes:</strong> ${app.notes}</div>` : ''}
+                <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:16px;">
+                    ${app.status === 'pending' ? `
+                        <button class="btn-success" onclick="approveApplication('${app.id}')">Approve</button>
+                        <button class="btn-danger" onclick="rejectApplication('${app.id}')">Reject</button>
+                    ` : ''}
+                    ${app.status === 'approved' ? `
+                        <button class="btn-primary" onclick="disburseLoan('${app.id}')">Disburse Loan</button>
+                    ` : ''}
+                    <button class="btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        `;
+
+        showModal(html);
+
+    } catch (error) {
+        console.error('View application error:', error);
+        showToast('Failed to load application details', 'error');
+    }
+};
 
 // ============================================
-// LOANS
+// DISBURSE LOAN - Create Loan from Application
+// ============================================
+window.disburseLoan = async (applicationId) => {
+    try {
+        // Fetch application
+        const { data: app, error } = await client
+            .from('applications')
+            .select('*')
+            .eq('id', applicationId)
+            .single();
+
+        if (error) throw error;
+
+        if (app.status !== 'approved') {
+            showToast('Application must be approved first', 'error');
+            return;
+        }
+
+        // Show disburse form in modal
+        const html = `
+            <div style="padding:20px;">
+                <h3 style="margin-bottom:16px;">Disburse Loan for ${app.applicant_name}</h3>
+                <p style="color:var(--text-secondary);margin-bottom:20px;">Create a loan from this approved application.</p>
+                <form id="disburseForm" onsubmit="handleDisburse(event, '${applicationId}')">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label>Amount (KES)</label>
+                            <input type="number" id="disburseAmount" value="${app.amount}" step="100" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Interest Rate (%)</label>
+                            <input type="number" id="disburseRate" value="12.5" step="0.5" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Term (months)</label>
+                            <input type="number" id="disburseTerm" value="${app.term_months || 12}" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Due Date</label>
+                            <input type="date" id="disburseDueDate" required />
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:16px;">
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Disburse Loan</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        showModal(html);
+
+        // Set default due date (today + term months)
+        const term = app.term_months || 12;
+        const dueDate = new Date();
+        dueDate.setMonth(dueDate.getMonth() + term);
+        document.getElementById('disburseDueDate').value = dueDate.toISOString().split('T')[0];
+
+    } catch (error) {
+        console.error('Disburse error:', error);
+        showToast('Failed to load disburse form', 'error');
+    }
+};
+
+// ============================================
+// HANDLE DISBURSE
+// ============================================
+window.handleDisburse = async (event, applicationId) => {
+    event.preventDefault();
+
+    const amount = parseFloat(document.getElementById('disburseAmount').value);
+    const rate = parseFloat(document.getElementById('disburseRate').value);
+    const term = parseInt(document.getElementById('disburseTerm').value);
+    const dueDate = document.getElementById('disburseDueDate').value;
+
+    if (!amount || !rate || !term || !dueDate) {
+        showToast('Please fill all fields', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+    try {
+        // Get application
+        const { data: app, error: appError } = await client
+            .from('applications')
+            .select('*')
+            .eq('id', applicationId)
+            .single();
+
+        if (appError) throw appError;
+
+        // Create loan
+        const { data: loan, error: loanError } = await client
+            .from('loans')
+            .insert({
+                customer_id: app.customer_id,
+                customer_name: app.applicant_name,
+                application_id: applicationId,
+                amount: amount,
+                interest_rate: rate,
+                term_months: term,
+                status: 'active',
+                due_date: dueDate,
+                disbursed_date: new Date().toISOString().split('T')[0],
+                notes: `Disbursed from application #${applicationId.slice(0,8)}`
+            })
+            .select()
+            .single();
+
+        if (loanError) throw loanError;
+
+        // Update application status to 'disbursed'
+        await client
+            .from('applications')
+            .update({ status: 'disbursed' })
+            .eq('id', applicationId);
+
+        showToast('Loan disbursed successfully!', 'success');
+        closeModal();
+        loadApplications();
+        loadLoans();
+
+    } catch (error) {
+        console.error('Disburse error:', error);
+        showToast('Failed to disburse loan: ' + error.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Disburse Loan';
+    }
+};
+
+// ============================================
+// LOANS - Enhanced with Payment Tracking
 // ============================================
 async function loadLoans() {
     showLoading();
@@ -849,35 +895,41 @@ async function loadLoans() {
                             <tr>
                                 <th>Customer</th>
                                 <th>Amount</th>
-                                <th>Interest Rate</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
                                 <th>Status</th>
                                 <th>Due Date</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="loansTableBody">
-                            ${loansData.map(loan => `
-                                <tr>
-                                    <td><strong>${loan.customer_name || 'N/A'}</strong></td>
-                                    <td>$${loan.amount?.toLocaleString() || '0'}</td>
-                                    <td>${loan.interest_rate || 0}%</td>
-                                    <td><span class="status-badge ${loan.status || 'active'}">${loan.status || 'Active'}</span></td>
-                                    <td>${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</td>
-                                    <td>
-                                        <button class="btn-icon" onclick="viewLoan('${loan.id}')" title="View">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </button>
-                                        <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
-                                            <i class="fa-solid fa-pen"></i>
-                                        </button>
-                                        ${loan.status === 'active' ? `
-                                            <button class="btn-icon success" onclick="makePayment('${loan.id}')" title="Make Payment">
-                                                <i class="fa-solid fa-money-bill"></i>
+                            ${loansData.map(async loan => {
+                                const balance = await calculateLoanBalance(loan.id);
+                                const paid = loan.amount - balance;
+                                return `
+                                    <tr>
+                                        <td><strong>${loan.customer_name || 'N/A'}</strong></td>
+                                        <td>KES ${loan.amount?.toLocaleString() || '0'}</td>
+                                        <td>KES ${paid.toLocaleString()}</td>
+                                        <td><strong>KES ${balance.toLocaleString()}</strong></td>
+                                        <td><span class="status-badge ${loan.status || 'active'}">${loan.status || 'Active'}</span></td>
+                                        <td>${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</td>
+                                        <td>
+                                            <button class="btn-icon" onclick="viewLoanDetails('${loan.id}')" title="View Details">
+                                                <i class="fa-solid fa-eye"></i>
                                             </button>
-                                        ` : ''}
-                                    </td>
-                                </tr>
-                            `).join('')}
+                                            <button class="btn-icon" onclick="editLoan('${loan.id}')" title="Edit">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            ${loan.status === 'active' ? `
+                                                <button class="btn-icon success" onclick="recordPayment('${loan.id}')" title="Record Payment">
+                                                    <i class="fa-solid fa-money-bill-wave"></i>
+                                                </button>
+                                            ` : ''}
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 ` : `
@@ -897,21 +949,268 @@ async function loadLoans() {
     }
 }
 
-function searchLoans() {
-    const searchTerm = document.getElementById('loanSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#loansTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-}
+// ============================================
+// CALCULATE LOAN BALANCE
+// ============================================
+async function calculateLoanBalance(loanId) {
+    try {
+        // Get total payments for this loan
+        const { data: payments, error } = await client
+            .from('payments')
+            .select('amount')
+            .eq('loan_id', loanId)
+            .eq('status', 'completed');
 
-function refreshLoans() {
-    loadLoans();
+        if (error) throw error;
+
+        const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        // Get loan amount
+        const { data: loan, error: loanError } = await client
+            .from('loans')
+            .select('amount')
+            .eq('id', loanId)
+            .single();
+
+        if (loanError) throw loanError;
+
+        const balance = loan.amount - totalPaid;
+        return Math.max(balance, 0);
+    } catch (error) {
+        console.error('Balance calculation error:', error);
+        return 0;
+    }
 }
 
 // ============================================
-// PAYMENTS
+// VIEW LOAN DETAILS WITH PAYMENT HISTORY
+// ============================================
+window.viewLoanDetails = async (loanId) => {
+    try {
+        const { data: loan, error } = await client
+            .from('loans')
+            .select('*')
+            .eq('id', loanId)
+            .single();
+
+        if (error) throw error;
+
+        // Get payments
+        const { data: payments, error: payError } = await client
+            .from('payments')
+            .select('*')
+            .eq('loan_id', loanId)
+            .order('created_at', { ascending: false });
+
+        if (payError) throw payError;
+
+        const balance = await calculateLoanBalance(loanId);
+        const paid = loan.amount - balance;
+
+        let html = `
+            <div style="padding:20px;">
+                <h3 style="margin-bottom:16px;">Loan Details</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                    <div><strong>Customer:</strong> ${loan.customer_name}</div>
+                    <div><strong>Amount:</strong> KES ${loan.amount?.toLocaleString()}</div>
+                    <div><strong>Paid:</strong> KES ${paid.toLocaleString()}</div>
+                    <div><strong>Balance:</strong> <strong style="color:${balance > 0 ? 'var(--warning-light)' : 'var(--success-light)'};">KES ${balance.toLocaleString()}</strong></div>
+                    <div><strong>Interest Rate:</strong> ${loan.interest_rate || 0}%</div>
+                    <div><strong>Term:</strong> ${loan.term_months || 0} months</div>
+                    <div><strong>Status:</strong> <span class="status-badge ${loan.status}">${loan.status}</span></div>
+                    <div><strong>Due Date:</strong> ${loan.due_date ? new Date(loan.due_date).toLocaleDateString() : 'N/A'}</div>
+                    <div><strong>Disbursed:</strong> ${loan.disbursed_date ? new Date(loan.disbursed_date).toLocaleDateString() : 'N/A'}</div>
+                    ${loan.notes ? `<div><strong>Notes:</strong> ${loan.notes}</div>` : ''}
+                </div>
+
+                <h4 style="margin:20px 0 12px;">Payment History</h4>
+                ${payments && payments.length > 0 ? `
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:var(--bg-primary);">
+                                    <th style="padding:8px 12px;text-align:left;font-weight:600;">Date</th>
+                                    <th style="padding:8px 12px;text-align:left;font-weight:600;">Amount</th>
+                                    <th style="padding:8px 12px;text-align:left;font-weight:600;">Method</th>
+                                    <th style="padding:8px 12px;text-align:left;font-weight:600;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${payments.map(p => `
+                                    <tr style="border-bottom:1px solid var(--border-color);">
+                                        <td style="padding:8px 12px;">${p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
+                                        <td style="padding:8px 12px;">KES ${p.amount?.toLocaleString()}</td>
+                                        <td style="padding:8px 12px;">${p.payment_method || 'N/A'}</td>
+                                        <td style="padding:8px 12px;"><span class="status-badge ${p.status}">${p.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                ` : `
+                    <div style="color:var(--text-muted);padding:20px;text-align:center;">No payments recorded yet.</div>
+                `}
+
+                <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:16px;">
+                    ${loan.status === 'active' ? `
+                        <button class="btn-success" onclick="recordPayment('${loan.id}')">Record Payment</button>
+                    ` : ''}
+                    <button class="btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        `;
+
+        showModal(html);
+
+    } catch (error) {
+        console.error('View loan details error:', error);
+        showToast('Failed to load loan details', 'error');
+    }
+};
+
+// ============================================
+// RECORD PAYMENT (Admin)
+// ============================================
+window.recordPayment = async (loanId) => {
+    try {
+        // Get loan details
+        const { data: loan, error } = await client
+            .from('loans')
+            .select('customer_id, customer_name, amount')
+            .eq('id', loanId)
+            .single();
+
+        if (error) throw error;
+
+        const balance = await calculateLoanBalance(loanId);
+
+        // Show payment form in modal
+        const html = `
+            <div style="padding:20px;">
+                <h3 style="margin-bottom:16px;">Record Payment for ${loan.customer_name}</h3>
+                <p style="color:var(--text-secondary);margin-bottom:20px;">Remaining Balance: <strong>KES ${balance.toLocaleString()}</strong></p>
+                <form id="recordPaymentForm" onsubmit="handleRecordPayment(event, '${loanId}')">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label>Amount (KES)</label>
+                            <input type="number" id="paymentAmount" required step="100" max="${balance}" placeholder="Enter amount" />
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            <select id="paymentMethod" required>
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="mobile_money">Mobile Money</option>
+                                <option value="card">Card</option>
+                                <option value="check">Check</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Type</label>
+                            <select id="paymentType" required>
+                                <option value="payment">Regular Payment</option>
+                                <option value="penalty">Penalty</option>
+                                <option value="fee">Fee</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Reference (Optional)</label>
+                            <input type="text" id="paymentReference" placeholder="Enter reference" />
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1;">
+                            <label>Notes (Optional)</label>
+                            <textarea id="paymentNotes" rows="2" placeholder="Any additional notes"></textarea>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:16px;">
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Record Payment</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        showModal(html);
+
+    } catch (error) {
+        console.error('Record payment error:', error);
+        showToast('Failed to load payment form', 'error');
+    }
+};
+
+// ============================================
+// HANDLE RECORD PAYMENT
+// ============================================
+window.handleRecordPayment = async (event, loanId) => {
+    event.preventDefault();
+
+    const amount = parseFloat(document.getElementById('paymentAmount').value);
+    const method = document.getElementById('paymentMethod').value;
+    const type = document.getElementById('paymentType').value;
+    const reference = document.getElementById('paymentReference').value.trim();
+    const notes = document.getElementById('paymentNotes').value.trim();
+
+    if (!amount || amount <= 0) {
+        showToast('Please enter a valid amount', 'error');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Recording...';
+
+    try {
+        // Get loan details
+        const { data: loan, error: loanError } = await client
+            .from('loans')
+            .select('customer_id, customer_name')
+            .eq('id', loanId)
+            .single();
+
+        if (loanError) throw loanError;
+
+        // Insert payment
+        const { error: payError } = await client
+            .from('payments')
+            .insert({
+                loan_id: loanId,
+                customer_id: loan.customer_id,
+                customer_name: loan.customer_name,
+                amount: amount,
+                type: type,
+                payment_method: method,
+                status: 'completed',
+                reference: reference || null,
+                notes: notes || null,
+                payment_date: new Date().toISOString()
+            });
+
+        if (payError) throw payError;
+
+        // Check if loan is fully paid
+        const balance = await calculateLoanBalance(loanId);
+        if (balance <= 0) {
+            // Update loan status to paid
+            await client
+                .from('loans')
+                .update({ status: 'paid' })
+                .eq('id', loanId);
+        }
+
+        showToast('Payment recorded successfully!', 'success');
+        closeModal();
+        loadLoans();
+        loadPayments();
+
+    } catch (error) {
+        console.error('Record payment error:', error);
+        showToast('Failed to record payment: ' + error.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Record Payment';
+    }
+};
+
+// ============================================
+// PAYMENTS - Enhanced
 // ============================================
 async function loadPayments() {
     showLoading();
@@ -958,9 +1257,11 @@ async function loadPayments() {
                         <thead>
                             <tr>
                                 <th>Customer</th>
-                                <th>Loan ID</th>
+                                <th>Loan</th>
                                 <th>Amount</th>
                                 <th>Type</th>
+                                <th>Method</th>
+                                <th>Status</th>
                                 <th>Date</th>
                                 <th>Actions</th>
                             </tr>
@@ -969,9 +1270,11 @@ async function loadPayments() {
                             ${paymentsData.map(payment => `
                                 <tr>
                                     <td><strong>${payment.customer_name || 'N/A'}</strong></td>
-                                    <td>${payment.loan_id || 'N/A'}</td>
-                                    <td>$${payment.amount?.toLocaleString() || '0'}</td>
+                                    <td>${payment.loan_id ? `#${payment.loan_id.slice(0,8)}` : 'N/A'}</td>
+                                    <td>KES ${payment.amount?.toLocaleString() || '0'}</td>
                                     <td><span class="status-badge ${payment.type || 'payment'}">${payment.type || 'Payment'}</span></td>
+                                    <td>${payment.payment_method || 'N/A'}</td>
+                                    <td><span class="status-badge ${payment.status || 'pending'}">${payment.status || 'Pending'}</span></td>
                                     <td>${payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'}</td>
                                     <td>
                                         <button class="btn-icon" onclick="viewPayment('${payment.id}')" title="View">
@@ -1005,6 +1308,77 @@ async function loadPayments() {
     }
 }
 
+// ============================================
+// VIEW PAYMENT DETAILS
+// ============================================
+window.viewPayment = async (id) => {
+    try {
+        const { data: payment, error } = await client
+            .from('payments')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+
+        let html = `
+            <div style="padding:20px;">
+                <h3 style="margin-bottom:16px;">Payment Details</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                    <div><strong>Customer:</strong> ${payment.customer_name}</div>
+                    <div><strong>Loan ID:</strong> ${payment.loan_id ? `#${payment.loan_id.slice(0,12)}` : 'N/A'}</div>
+                    <div><strong>Amount:</strong> KES ${payment.amount?.toLocaleString()}</div>
+                    <div><strong>Type:</strong> ${payment.type || 'Payment'}</div>
+                    <div><strong>Method:</strong> ${payment.payment_method || 'N/A'}</div>
+                    <div><strong>Status:</strong> <span class="status-badge ${payment.status}">${payment.status}</span></div>
+                    <div><strong>Reference:</strong> ${payment.reference || 'N/A'}</div>
+                    <div><strong>Payment Date:</strong> ${payment.payment_date ? new Date(payment.payment_date).toLocaleString() : 'N/A'}</div>
+                    ${payment.notes ? `<div><strong>Notes:</strong> ${payment.notes}</div>` : ''}
+                </div>
+                <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:16px;">
+                    <button class="btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        `;
+
+        showModal(html);
+
+    } catch (error) {
+        console.error('View payment error:', error);
+        showToast('Failed to load payment details', 'error');
+    }
+};
+
+// ============================================
+// SEARCH FUNCTIONS
+// ============================================
+function searchCustomers() {
+    const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#customersTableBody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+function searchApplications() {
+    const searchTerm = document.getElementById('applicationSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#applicationsTableBody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+function searchLoans() {
+    const searchTerm = document.getElementById('loanSearch')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#loansTableBody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
 function searchPayments() {
     const searchTerm = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
     const rows = document.querySelectorAll('#paymentsTableBody tr');
@@ -1014,9 +1388,13 @@ function searchPayments() {
     });
 }
 
-function refreshPayments() {
-    loadPayments();
-}
+// ============================================
+// REFRESH FUNCTIONS
+// ============================================
+function refreshCustomers() { loadCustomers(); }
+function refreshApplications() { loadApplications(); }
+function refreshLoans() { loadLoans(); }
+function refreshPayments() { loadPayments(); }
 
 // ============================================
 // REPORTS
@@ -1104,7 +1482,6 @@ async function loadSettings() {
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-
 async function getTableCount(tableName) {
     try {
         const { data, error } = await client
@@ -1115,7 +1492,6 @@ async function getTableCount(tableName) {
             console.warn(`Error counting ${tableName}:`, error.message);
             return 0;
         }
-        
         return data?.length || 0;
     } catch (error) {
         console.error(`Error counting ${tableName}:`, error);
@@ -1127,7 +1503,6 @@ function renderRecentApplications(applications) {
     if (!applications?.length) {
         return `<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No recent applications</p></div>`;
     }
-
     return `
         <div class="activity-list">
             ${applications.map(app => `
@@ -1150,7 +1525,6 @@ function renderRecentCustomers(customers) {
     if (!customers?.length) {
         return `<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No recent users</p></div>`;
     }
-
     return `
         <div class="activity-list">
             ${customers.slice(0, 5).map(customer => `
@@ -1179,7 +1553,6 @@ function timeAgo(date) {
         hour: 3600,
         minute: 60
     };
-
     for (const [unit, value] of Object.entries(intervals)) {
         const count = Math.floor(seconds / value);
         if (count >= 1) {
@@ -1189,6 +1562,9 @@ function timeAgo(date) {
     return 'Just now';
 }
 
+// ============================================
+// UI HELPERS
+// ============================================
 function showLoading() {
     isLoading = true;
     const content = document.getElementById('content');
@@ -1240,15 +1616,10 @@ function showToast(message, type = 'success') {
 }
 
 // ============================================
-// APPLICATION CRUD OPERATIONS
+// APPLICATION CRUD OPERATIONS (basic)
 // ============================================
-
 window.showAddApplication = () => {
     showToast('New application form coming soon');
-};
-
-window.viewApplication = (id) => {
-    showToast(`Viewing application ${id}`);
 };
 
 window.editApplication = (id) => {
@@ -1288,15 +1659,10 @@ window.rejectApplication = async (id) => {
 };
 
 // ============================================
-// LOAN CRUD OPERATIONS
+// LOAN CRUD OPERATIONS (basic)
 // ============================================
-
 window.showAddLoan = () => {
     showToast('Disburse loan form coming soon');
-};
-
-window.viewLoan = (id) => {
-    showToast(`Viewing loan ${id}`);
 };
 
 window.editLoan = (id) => {
@@ -1304,19 +1670,14 @@ window.editLoan = (id) => {
 };
 
 window.makePayment = (id) => {
-    showToast(`Payment form for loan ${id}`);
+    recordPayment(id);
 };
 
 // ============================================
-// PAYMENT CRUD OPERATIONS
+// PAYMENT CRUD OPERATIONS (basic)
 // ============================================
-
 window.showAddPayment = () => {
     showToast('Record payment form coming soon');
-};
-
-window.viewPayment = (id) => {
-    showToast(`Viewing payment ${id}`);
 };
 
 window.editPayment = (id) => {
@@ -1342,7 +1703,6 @@ window.deletePayment = async (id) => {
 // ============================================
 // REPORT FUNCTIONS
 // ============================================
-
 window.generateReport = async (type) => {
     showToast(`Generating ${type} report...`, 'info');
     
@@ -1393,11 +1753,11 @@ window.generateReport = async (type) => {
                     </div>
                     <div class="report-stat">
                         <span>Total Amount</span>
-                        <strong>$${totalAmount.toLocaleString()}</strong>
+                        <strong>KES ${totalAmount.toLocaleString()}</strong>
                     </div>
                     <div class="report-stat">
                         <span>Average</span>
-                        <strong>$${total > 0 ? (totalAmount / total).toFixed(2) : '0.00'}</strong>
+                        <strong>KES ${total > 0 ? (totalAmount / total).toFixed(2) : '0.00'}</strong>
                     </div>
                 </div>
                 <div style="margin-top: 16px;">
@@ -1428,7 +1788,6 @@ window.downloadReport = (type) => {
 // ============================================
 // SETTINGS FUNCTIONS
 // ============================================
-
 window.updateProfile = async () => {
     const name = document.getElementById('settingsName')?.value;
     if (!name) {
