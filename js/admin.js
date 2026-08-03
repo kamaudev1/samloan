@@ -44,6 +44,8 @@ const pages = {
         }
 
         await loadDashboard();
+        setupSidebarToggle(); // Initialize sidebar controls
+        setupGlobalListeners(); // Keyboard shortcuts, overlay, etc.
     } catch (error) {
         console.error('Initialization error:', error);
         showError('Failed to initialize admin panel');
@@ -51,7 +53,217 @@ const pages = {
 })();
 
 // ============================================
-// NAVIGATION
+// SIDEBAR TOGGLE – Hidden/Revealed
+// ============================================
+function setupSidebarToggle() {
+    const sidebar = document.querySelector('aside');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const toggleBtn = document.getElementById('mobileMenuBtn') || document.querySelector('.sidebar-toggle');
+    const closeBtn = document.querySelector('.sidebar-close') || document.querySelector('#sidebarClose');
+
+    if (!sidebar) return;
+
+    // Toggle function
+    function toggleSidebar() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+        } else {
+            // On desktop, toggle collapsed state (icon-only)
+            sidebar.classList.toggle('collapsed');
+            // Optionally store preference
+            try {
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            } catch (e) {}
+        }
+    }
+
+    // Open sidebar (for mobile)
+    function openSidebar() {
+        if (window.innerWidth <= 768 && !sidebar.classList.contains('open')) {
+            sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    // Close sidebar (for mobile)
+    function closeSidebar() {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Toggle button click
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    }
+
+    // Overlay click (close on mobile)
+    if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close button (if any)
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar when a nav item is clicked (mobile)
+    const navItems = sidebar.querySelectorAll('ul li');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeSidebar();
+    });
+
+    // Restore desktop collapsed state from localStorage
+    if (window.innerWidth > 768) {
+        try {
+            const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (collapsed) sidebar.classList.add('collapsed');
+        } catch (e) {}
+    }
+
+    // Handle window resize: if resizing to desktop, remove mobile open state
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768 && sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        // If we are on mobile and sidebar has collapsed class (from desktop), remove it
+        if (window.innerWidth <= 768 && sidebar.classList.contains('collapsed')) {
+            sidebar.classList.remove('collapsed');
+        }
+    });
+
+    // Expose close function globally for other parts (like modal close)
+    window.closeSidebar = closeSidebar;
+    window.openSidebar = openSidebar;
+    window.toggleSidebar = toggleSidebar;
+}
+
+// ============================================
+// GLOBAL LISTENERS (Escape for modals, etc.)
+// ============================================
+function setupGlobalListeners() {
+    // Close modals with Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.querySelector('.admin-modal-overlay');
+            if (modal) closeModal();
+        }
+    });
+
+    // Close modals on overlay click (already handled in showModal)
+}
+
+// ============================================
+// MODAL HELPERS (Improved)
+// ============================================
+function showModal(html) {
+    const existing = document.querySelector('.admin-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-modal-overlay';
+    overlay.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+        display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;
+        animation:fadeIn 0.3s ease;
+    `;
+    overlay.innerHTML = `
+        <div style="background:var(--bg-card);border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;padding:0;border:1px solid var(--border-color);">
+            ${html}
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeModal();
+    });
+
+    // Focus trap? Not necessary but nice.
+    const focusable = overlay.querySelectorAll('button, input, select, textarea, a');
+    if (focusable.length) focusable[0].focus();
+}
+
+function closeModal() {
+    const overlay = document.querySelector('.admin-modal-overlay');
+    if (overlay) overlay.remove();
+}
+
+// ============================================
+// TOAST NOTIFICATIONS (Enhanced)
+// ============================================
+function showToast(message, type = 'success', duration = 3500) {
+    const container = document.getElementById('toastContainer') || createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const iconMap = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+    };
+    const icon = iconMap[type] || iconMap.info;
+    toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <span class="toast-msg">${message}</span>
+        <button class="toast-close">&times;</button>
+    `;
+    container.appendChild(toast);
+
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => removeToast(toast));
+
+    let timer = setTimeout(() => removeToast(toast), duration);
+
+    toast.addEventListener('mouseenter', () => clearTimeout(timer));
+    toast.addEventListener('mouseleave', () => {
+        timer = setTimeout(() => removeToast(toast), duration);
+    });
+
+    function removeToast(el) {
+        if (el.classList.contains('removing')) return;
+        el.classList.add('removing');
+        setTimeout(() => {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 300);
+    }
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = `
+        position:fixed;bottom:24px;right:24px;
+        display:flex;flex-direction:column;gap:10px;
+        z-index:9999;max-width:400px;width:100%;
+        pointer-events:none;
+    `;
+    container.addEventListener('click', (e) => e.stopPropagation());
+    document.body.appendChild(container);
+    return container;
+}
+
+// ============================================
+// NAVIGATION (with sidebar close on mobile)
 // ============================================
 document.querySelectorAll('aside li[data-page]').forEach(item => {
     item.onclick = async () => {
@@ -69,6 +281,11 @@ document.querySelectorAll('aside li[data-page]').forEach(item => {
 
         currentPage = page;
         await pages[page].load();
+
+        // Close sidebar on mobile after navigation
+        if (window.innerWidth <= 768 && window.closeSidebar) {
+            window.closeSidebar();
+        }
     };
 });
 
@@ -82,7 +299,7 @@ document.getElementById('logout').onclick = async () => {
         window.location.href = '../login.html';
     } catch (error) {
         console.error('Logout error:', error);
-        showError('Failed to logout');
+        showToast('Failed to logout', 'error');
     }
 };
 
@@ -194,7 +411,7 @@ async function loadDashboard() {
         `;
     } catch (error) {
         console.error('Dashboard error:', error);
-        showError('Failed to load dashboard data');
+        showToast('Failed to load dashboard data', 'error');
     } finally {
         hideLoading();
     }
@@ -303,7 +520,7 @@ async function loadCustomers() {
         `;
     } catch (error) {
         console.error('Customers error:', error);
-        showError('Failed to load customers: ' + error.message);
+        showToast('Failed to load customers: ' + error.message, 'error');
     } finally {
         hideLoading();
     }
@@ -430,37 +647,6 @@ async function viewCustomerDocuments(customerId) {
 }
 
 // ============================================
-// MODAL HELPERS
-// ============================================
-function showModal(html) {
-    const existing = document.querySelector('.admin-modal-overlay');
-    if (existing) existing.remove();
-
-    const overlay = document.createElement('div');
-    overlay.className = 'admin-modal-overlay';
-    overlay.style.cssText = `
-        position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
-        display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;
-        animation:fadeIn 0.3s ease;
-    `;
-    overlay.innerHTML = `
-        <div style="background:var(--bg-card);border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;padding:0;border:1px solid var(--border-color);">
-            ${html}
-        </div>
-    `;
-    document.body.appendChild(overlay);
-
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) closeModal();
-    });
-}
-
-function closeModal() {
-    const overlay = document.querySelector('.admin-modal-overlay');
-    if (overlay) overlay.remove();
-}
-
-// ============================================
 // CUSTOMER DETAILS (with Documents button)
 // ============================================
 window.viewCustomer = async (id) => {
@@ -551,7 +737,7 @@ async function loadApplications() {
 
         if (error) {
             if (error.code === '42P01') {
-                showError('The "applications" table does not exist. Please create it first.');
+                showToast('The "applications" table does not exist. Please create it first.', 'error');
                 return;
             }
             throw error;
@@ -637,7 +823,7 @@ async function loadApplications() {
         `;
     } catch (error) {
         console.error('Applications error:', error);
-        showError('Failed to load applications');
+        showToast('Failed to load applications', 'error');
     } finally {
         hideLoading();
     }
@@ -837,7 +1023,7 @@ async function loadLoans() {
 
         if (error) {
             if (error.code === '42P01') {
-                showError('The "loans" table does not exist. Please create it first.');
+                showToast('The "loans" table does not exist. Please create it first.', 'error');
                 return;
             }
             throw error;
@@ -924,7 +1110,7 @@ async function loadLoans() {
         `;
     } catch (error) {
         console.error('Loans error:', error);
-        showError('Failed to load loans');
+        showToast('Failed to load loans', 'error');
     } finally {
         hideLoading();
     }
@@ -1188,7 +1374,7 @@ async function loadPayments() {
 
         if (error) {
             if (error.code === '42P01') {
-                showError('The "payments" table does not exist. Please create it first.');
+                showToast('The "payments" table does not exist. Please create it first.', 'error');
                 return;
             }
             throw error;
@@ -1268,7 +1454,7 @@ async function loadPayments() {
         `;
     } catch (error) {
         console.error('Payments error:', error);
-        showError('Failed to load payments');
+        showToast('Failed to load payments', 'error');
     } finally {
         hideLoading();
     }
@@ -1315,41 +1501,55 @@ window.viewPayment = async (id) => {
 };
 
 // ============================================
-// SEARCH FUNCTIONS
+// SEARCH FUNCTIONS (debounced for performance)
 // ============================================
+let searchTimeout;
+function debouncedSearch(callback) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(callback, 300);
+}
+
 function searchCustomers() {
-    const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#customersTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    debouncedSearch(() => {
+        const searchTerm = document.getElementById('customerSearch')?.value.toLowerCase() || '';
+        const rows = document.querySelectorAll('#customersTableBody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
     });
 }
 
 function searchApplications() {
-    const searchTerm = document.getElementById('applicationSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#applicationsTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    debouncedSearch(() => {
+        const searchTerm = document.getElementById('applicationSearch')?.value.toLowerCase() || '';
+        const rows = document.querySelectorAll('#applicationsTableBody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
     });
 }
 
 function searchLoans() {
-    const searchTerm = document.getElementById('loanSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#loansTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    debouncedSearch(() => {
+        const searchTerm = document.getElementById('loanSearch')?.value.toLowerCase() || '';
+        const rows = document.querySelectorAll('#loansTableBody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
     });
 }
 
 function searchPayments() {
-    const searchTerm = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#paymentsTableBody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    debouncedSearch(() => {
+        const searchTerm = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
+        const rows = document.querySelectorAll('#paymentsTableBody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
     });
 }
 
@@ -1556,28 +1756,6 @@ function showError(message) {
             </button>
         </div>
     `;
-}
-
-function showToast(message, type = 'success') {
-    const existingToasts = document.querySelectorAll('.toast');
-    existingToasts.forEach(toast => toast.remove());
-
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icon = type === 'success' ? 'fa-check-circle' : 
-                 type === 'error' ? 'fa-exclamation-circle' :
-                 type === 'info' ? 'fa-info-circle' : 'fa-check-circle';
-    toast.innerHTML = `
-        <i class="fa-solid ${icon}"></i>
-        <span>${message}</span>
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(20px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
 }
 
 // ============================================
