@@ -11,58 +11,79 @@
 
 <body>
     <div class="admin">
-        <!-- Sidebar -->
-        <aside>
+        
+        <!-- ============================================
+             SIDEBAR OVERLAY (Mobile backdrop)
+             ============================================ -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- ============================================
+             SIDEBAR
+             ============================================ -->
+        <aside id="sidebar">
             <div class="logo">
                 <i class="fa-solid fa-building-columns"></i>
                 <h2>Sam Loans</h2>
+                <!-- Sidebar close button (mobile) -->
+                <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             <ul>
                 <li class="active" data-page="dashboard">
                     <i class="fa-solid fa-chart-line"></i>
-                    Dashboard
+                    <span>Dashboard</span>
                 </li>
                 <li data-page="customers">
                     <i class="fa-solid fa-users"></i>
-                    Customers
+                    <span>Customers</span>
                 </li>
                 <li data-page="applications">
                     <i class="fa-solid fa-file-signature"></i>
-                    Applications
+                    <span>Applications</span>
                 </li>
                 <li data-page="loans">
                     <i class="fa-solid fa-wallet"></i>
-                    Loans
+                    <span>Loans</span>
                 </li>
                 <li data-page="payments">
                     <i class="fa-solid fa-money-bill-wave"></i>
-                    Payments
+                    <span>Payments</span>
                 </li>
                 <li data-page="reports">
                     <i class="fa-solid fa-chart-pie"></i>
-                    Reports
+                    <span>Reports</span>
                 </li>
                 <li data-page="settings">
                     <i class="fa-solid fa-gear"></i>
-                    Settings
+                    <span>Settings</span>
                 </li>
                 <li id="logout">
                     <i class="fa-solid fa-right-from-bracket"></i>
-                    Logout
+                    <span>Logout</span>
                 </li>
             </ul>
         </aside>
 
-        <!-- Main -->
+        <!-- ============================================
+             MAIN CONTENT
+             ============================================ -->
         <main>
             <header>
-                <div>
-                    <h1 id="pageTitle">Dashboard</h1>
-                    <p id="welcomeAdmin">Welcome</p>
+                <div class="header-left">
+                    <!-- Mobile menu toggle button -->
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div>
+                        <h1 id="pageTitle">Dashboard</h1>
+                        <p id="welcomeAdmin">Welcome</p>
+                    </div>
                 </div>
                 <div class="admin-profile">
-                    <i class="fa-solid fa-user-shield"></i>
+                    <span class="avatar">A</span>
                     <span id="adminName">Admin</span>
+                    <i class="fa-solid fa-chevron-down"></i>
                 </div>
             </header>
             <section id="content">
